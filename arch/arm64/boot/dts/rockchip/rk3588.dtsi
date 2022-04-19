@@ -4,3 +4,4 @@
  */
 
 #include "rk3588s.dtsi"
+#include "rk3588-pinctrl.dtsi"
