@@ -4,6 +4,7 @@
  */
 
 #include <dt-bindings/clock/rk3588-cru.h>
+#include <dt-bindings/power/rk3588-power.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 
@@ -716,6 +717,556 @@
 			#interrupt-cells = <2>;
 		};
 	};
+
+	pmu: power-management@fd8d8000 {
+		compatible = "rockchip,rk3588-pmu", "syscon", "simple-mfd";
+		reg = <0x0 0xfd8d8000 0x0 0x400>;
+
+		power: power-controller {
+			compatible = "rockchip,rk3588-power-controller";
+			#power-domain-cells = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+
+			/* These power domains are grouped by VD_NPU */
+			power-domain@RK3588_PD_NPU {
+				reg = <RK3588_PD_NPU>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				#power-domain-cells = <0>;
+
+				power-domain@RK3588_PD_NPUTOP {
+					reg = <RK3588_PD_NPUTOP>;
+					#address-cells = <1>;
+					#size-cells = <0>;
+					clocks = <&cru HCLK_NPU_ROOT>,
+						 <&cru PCLK_NPU_ROOT>,
+						 <&cru CLK_NPU_DSU0>,
+						 <&cru HCLK_NPU_CM0_ROOT>;
+					pm_qos = <&qos_npu0_mwr>,
+						 <&qos_npu0_mro>,
+						 <&qos_mcu_npu>;
+					#power-domain-cells = <0>;
+
+					power-domain@RK3588_PD_NPU1 {
+						reg = <RK3588_PD_NPU1>;
+						clocks = <&cru HCLK_NPU_ROOT>,
+							 <&cru PCLK_NPU_ROOT>,
+							 <&cru CLK_NPU_DSU0>;
+						pm_qos = <&qos_npu1>;
+						#power-domain-cells = <0>;
+					};
+					power-domain@RK3588_PD_NPU2 {
+						reg = <RK3588_PD_NPU2>;
+						clocks = <&cru HCLK_NPU_ROOT>,
+							 <&cru PCLK_NPU_ROOT>,
+							 <&cru CLK_NPU_DSU0>;
+						pm_qos = <&qos_npu2>;
+						#power-domain-cells = <0>;
+					};
+				};
+			};
+			/* These power domains are grouped by VD_GPU */
+			power-domain@RK3588_PD_GPU {
+				reg = <RK3588_PD_GPU>;
+				clocks = <&cru CLK_GPU>,
+					 <&cru CLK_GPU_COREGROUP>,
+					 <&cru CLK_GPU_STACKS>;
+				pm_qos = <&qos_gpu_m0>,
+					 <&qos_gpu_m1>,
+					 <&qos_gpu_m2>,
+					 <&qos_gpu_m3>;
+				#power-domain-cells = <0>;
+			};
+			/* These power domains are grouped by VD_VCODEC */
+			power-domain@RK3588_PD_VCODEC {
+				reg = <RK3588_PD_VCODEC>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				#power-domain-cells = <0>;
+
+				power-domain@RK3588_PD_RKVDEC0 {
+					reg = <RK3588_PD_RKVDEC0>;
+					clocks = <&cru HCLK_RKVDEC0>,
+						 <&cru HCLK_VDPU_ROOT>,
+						 <&cru ACLK_VDPU_ROOT>,
+						 <&cru ACLK_RKVDEC0>,
+						 <&cru ACLK_RKVDEC_CCU>;
+					pm_qos = <&qos_rkvdec0>;
+					#power-domain-cells = <0>;
+				};
+				power-domain@RK3588_PD_RKVDEC1 {
+					reg = <RK3588_PD_RKVDEC1>;
+					clocks = <&cru HCLK_RKVDEC1>,
+						 <&cru HCLK_VDPU_ROOT>,
+						 <&cru ACLK_VDPU_ROOT>,
+						 <&cru ACLK_RKVDEC1>;
+					pm_qos = <&qos_rkvdec1>;
+					#power-domain-cells = <0>;
+				};
+				power-domain@RK3588_PD_VENC0 {
+					reg = <RK3588_PD_VENC0>;
+					#address-cells = <1>;
+					#size-cells = <0>;
+					clocks = <&cru HCLK_RKVENC0>,
+						 <&cru ACLK_RKVENC0>;
+					pm_qos = <&qos_rkvenc0_m0ro>,
+						 <&qos_rkvenc0_m1ro>,
+						 <&qos_rkvenc0_m2wo>;
+					#power-domain-cells = <0>;
+
+					power-domain@RK3588_PD_VENC1 {
+						reg = <RK3588_PD_VENC1>;
+						clocks = <&cru HCLK_RKVENC1>,
+							 <&cru HCLK_RKVENC0>,
+							 <&cru ACLK_RKVENC0>,
+							 <&cru ACLK_RKVENC1>;
+						pm_qos = <&qos_rkvenc1_m0ro>,
+							 <&qos_rkvenc1_m1ro>,
+							 <&qos_rkvenc1_m2wo>;
+						#power-domain-cells = <0>;
+					};
+				};
+			};
+			/* These power domains are grouped by VD_LOGIC */
+			power-domain@RK3588_PD_VDPU {
+				reg = <RK3588_PD_VDPU>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				clocks = <&cru HCLK_VDPU_ROOT>,
+					 <&cru ACLK_VDPU_LOW_ROOT>,
+					 <&cru ACLK_VDPU_ROOT>,
+					 <&cru ACLK_JPEG_DECODER_ROOT>,
+					 <&cru ACLK_IEP2P0>,
+					 <&cru HCLK_IEP2P0>,
+					 <&cru ACLK_JPEG_ENCODER0>,
+					 <&cru HCLK_JPEG_ENCODER0>,
+					 <&cru ACLK_JPEG_ENCODER1>,
+					 <&cru HCLK_JPEG_ENCODER1>,
+					 <&cru ACLK_JPEG_ENCODER2>,
+					 <&cru HCLK_JPEG_ENCODER2>,
+					 <&cru ACLK_JPEG_ENCODER3>,
+					 <&cru HCLK_JPEG_ENCODER3>,
+					 <&cru ACLK_JPEG_DECODER>,
+					 <&cru HCLK_JPEG_DECODER>,
+					 <&cru ACLK_RGA2>,
+					 <&cru HCLK_RGA2>;
+				pm_qos = <&qos_iep>,
+					 <&qos_jpeg_dec>,
+					 <&qos_jpeg_enc0>,
+					 <&qos_jpeg_enc1>,
+					 <&qos_jpeg_enc2>,
+					 <&qos_jpeg_enc3>,
+					 <&qos_rga2_mro>,
+					 <&qos_rga2_mwo>;
+				#power-domain-cells = <0>;
+
+				power-domain@RK3588_PD_AV1 {
+					reg = <RK3588_PD_AV1>;
+					clocks = <&cru PCLK_AV1>,
+						 <&cru ACLK_AV1>,
+						 <&cru HCLK_VDPU_ROOT>;
+					pm_qos = <&qos_av1>;
+					#power-domain-cells = <0>;
+				};
+				power-domain@RK3588_PD_RKVDEC0 {
+					reg = <RK3588_PD_RKVDEC0>;
+					clocks = <&cru HCLK_RKVDEC0>,
+						 <&cru HCLK_VDPU_ROOT>,
+						 <&cru ACLK_VDPU_ROOT>,
+						 <&cru ACLK_RKVDEC0>;
+					pm_qos = <&qos_rkvdec0>;
+					#power-domain-cells = <0>;
+				};
+				power-domain@RK3588_PD_RKVDEC1 {
+					reg = <RK3588_PD_RKVDEC1>;
+					clocks = <&cru HCLK_RKVDEC1>,
+						 <&cru HCLK_VDPU_ROOT>,
+						 <&cru ACLK_VDPU_ROOT>;
+					pm_qos = <&qos_rkvdec1>;
+					#power-domain-cells = <0>;
+				};
+				power-domain@RK3588_PD_RGA30 {
+					reg = <RK3588_PD_RGA30>;
+					clocks = <&cru ACLK_RGA3_0>,
+						 <&cru HCLK_RGA3_0>;
+					pm_qos = <&qos_rga3_0>;
+					#power-domain-cells = <0>;
+				};
+			};
+			power-domain@RK3588_PD_VOP {
+				reg = <RK3588_PD_VOP>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				clocks = <&cru PCLK_VOP_ROOT>,
+					 <&cru HCLK_VOP_ROOT>,
+					 <&cru ACLK_VOP>;
+				pm_qos = <&qos_vop_m0>,
+					 <&qos_vop_m1>;
+				#power-domain-cells = <0>;
+
+				power-domain@RK3588_PD_VO0 {
+					reg = <RK3588_PD_VO0>;
+					clocks = <&cru PCLK_VO0_ROOT>,
+						 <&cru PCLK_VO0_S_ROOT>,
+						 <&cru HCLK_VO0_S_ROOT>,
+						 <&cru ACLK_VO0_ROOT>,
+						 <&cru HCLK_HDCP0>,
+						 <&cru ACLK_HDCP0>,
+						 <&cru HCLK_VOP_ROOT>;
+					pm_qos = <&qos_hdcp0>;
+					#power-domain-cells = <0>;
+				};
+			};
+			power-domain@RK3588_PD_VO1 {
+				reg = <RK3588_PD_VO1>;
+				clocks = <&cru PCLK_VO1_ROOT>,
+					 <&cru PCLK_VO1_S_ROOT>,
+					 <&cru HCLK_VO1_S_ROOT>,
+					 <&cru HCLK_HDCP1>,
+					 <&cru ACLK_HDCP1>,
+					 <&cru ACLK_HDMIRX_ROOT>,
+					 <&cru HCLK_VO1USB_TOP_ROOT>;
+				pm_qos = <&qos_hdcp1>,
+					 <&qos_hdmirx>;
+				#power-domain-cells = <0>;
+			};
+			power-domain@RK3588_PD_VI {
+				reg = <RK3588_PD_VI>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+				clocks = <&cru HCLK_VI_ROOT>,
+					 <&cru PCLK_VI_ROOT>,
+					 <&cru HCLK_ISP0>,
+					 <&cru ACLK_ISP0>,
+					 <&cru HCLK_VICAP>,
+					 <&cru ACLK_VICAP>;
+				pm_qos = <&qos_isp0_mro>,
+					 <&qos_isp0_mwo>,
+					 <&qos_vicap_m0>,
+					 <&qos_vicap_m1>;
+				#power-domain-cells = <0>;
+
+				power-domain@RK3588_PD_ISP1 {
+					reg = <RK3588_PD_ISP1>;
+					clocks = <&cru HCLK_ISP1>,
+						 <&cru ACLK_ISP1>,
+						 <&cru HCLK_VI_ROOT>,
+						 <&cru PCLK_VI_ROOT>;
+					pm_qos = <&qos_isp1_mwo>,
+						 <&qos_isp1_mro>;
+					#power-domain-cells = <0>;
+				};
+				power-domain@RK3588_PD_FEC {
+					reg = <RK3588_PD_FEC>;
+					clocks = <&cru HCLK_FISHEYE0>,
+						 <&cru ACLK_FISHEYE0>,
+						 <&cru HCLK_FISHEYE1>,
+						 <&cru ACLK_FISHEYE1>,
+						 <&cru PCLK_VI_ROOT>;
+					pm_qos = <&qos_fisheye0>,
+						 <&qos_fisheye1>;
+					#power-domain-cells = <0>;
+				};
+			};
+			power-domain@RK3588_PD_RGA31 {
+				reg = <RK3588_PD_RGA31>;
+				clocks = <&cru HCLK_RGA3_1>,
+					 <&cru ACLK_RGA3_1>;
+				pm_qos = <&qos_rga3_1>;
+				#power-domain-cells = <0>;
+			};
+			power-domain@RK3588_PD_USB {
+				reg = <RK3588_PD_USB>;
+				clocks = <&cru PCLK_PHP_ROOT>,
+					 <&cru ACLK_USB_ROOT>,
+					 <&cru HCLK_USB_ROOT>,
+					 <&cru HCLK_HOST0>,
+					 <&cru HCLK_HOST_ARB0>,
+					 <&cru HCLK_HOST1>,
+					 <&cru HCLK_HOST_ARB1>;
+				pm_qos = <&qos_usb3_0>,
+					 <&qos_usb3_1>,
+					 <&qos_usb2host_0>,
+					 <&qos_usb2host_1>;
+				#power-domain-cells = <0>;
+			};
+			power-domain@RK3588_PD_GMAC {
+				reg = <RK3588_PD_GMAC>;
+				clocks = <&cru PCLK_PHP_ROOT>,
+					 <&cru ACLK_PCIE_ROOT>,
+					 <&cru ACLK_PHP_ROOT>;
+				#power-domain-cells = <0>;
+			};
+			power-domain@RK3588_PD_PCIE {
+				reg = <RK3588_PD_PCIE>;
+				clocks = <&cru PCLK_PHP_ROOT>,
+					 <&cru ACLK_PCIE_ROOT>,
+					 <&cru ACLK_PHP_ROOT>;
+				#power-domain-cells = <0>;
+			};
+			power-domain@RK3588_PD_SDIO {
+				reg = <RK3588_PD_SDIO>;
+				clocks = <&cru HCLK_SDIO>,
+					 <&cru HCLK_NVM_ROOT>;
+				pm_qos = <&qos_sdio>;
+				#power-domain-cells = <0>;
+			};
+			power-domain@RK3588_PD_AUDIO {
+				reg = <RK3588_PD_AUDIO>;
+				clocks = <&cru HCLK_AUDIO_ROOT>,
+					 <&cru PCLK_AUDIO_ROOT>;
+				#power-domain-cells = <0>;
+			};
+			power-domain@RK3588_PD_SDMMC {
+				reg = <RK3588_PD_SDMMC>;
+				pm_qos = <&qos_sdmmc>;
+				#power-domain-cells = <0>;
+			};
+		};
+	};
+
+	qos_gpu_m0: qos@fdf35000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf35000 0x0 0x20>;
+	};
+
+	qos_gpu_m1: qos@fdf35200 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf35200 0x0 0x20>;
+	};
+
+	qos_gpu_m2: qos@fdf35400 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf35400 0x0 0x20>;
+	};
+
+	qos_gpu_m3: qos@fdf35600 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf35600 0x0 0x20>;
+	};
+
+	qos_rga3_1: qos@fdf36000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf36000 0x0 0x20>;
+	};
+
+	qos_sdio: qos@fdf39000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf39000 0x0 0x20>;
+	};
+
+	qos_sdmmc: qos@fdf3d800 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf3d800 0x0 0x20>;
+	};
+
+	qos_usb3_1: qos@fdf3e000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf3e000 0x0 0x20>;
+	};
+
+	qos_usb3_0: qos@fdf3e200 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf3e200 0x0 0x20>;
+	};
+
+	qos_usb2host_0: qos@fdf3e400 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf3e400 0x0 0x20>;
+	};
+
+	qos_usb2host_1: qos@fdf3e600 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf3e600 0x0 0x20>;
+	};
+
+	qos_fisheye0: qos@fdf40000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf40000 0x0 0x20>;
+	};
+
+	qos_fisheye1: qos@fdf40200 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf40200 0x0 0x20>;
+	};
+
+	qos_isp0_mro: qos@fdf40400 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf40400 0x0 0x20>;
+	};
+
+	qos_isp0_mwo: qos@fdf40500 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf40500 0x0 0x20>;
+	};
+
+	qos_vicap_m0: qos@fdf40600 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf40600 0x0 0x20>;
+	};
+
+	qos_vicap_m1: qos@fdf40800 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf40800 0x0 0x20>;
+	};
+
+	qos_isp1_mwo: qos@fdf41000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf41000 0x0 0x20>;
+	};
+
+	qos_isp1_mro: qos@fdf41100 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf41100 0x0 0x20>;
+	};
+
+	qos_rkvenc0_m0ro: qos@fdf60000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf60000 0x0 0x20>;
+	};
+
+	qos_rkvenc0_m1ro: qos@fdf60200 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf60200 0x0 0x20>;
+	};
+
+	qos_rkvenc0_m2wo: qos@fdf60400 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf60400 0x0 0x20>;
+	};
+
+	qos_rkvenc1_m0ro: qos@fdf61000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf61000 0x0 0x20>;
+	};
+
+	qos_rkvenc1_m1ro: qos@fdf61200 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf61200 0x0 0x20>;
+	};
+
+	qos_rkvenc1_m2wo: qos@fdf61400 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf61400 0x0 0x20>;
+	};
+
+	qos_rkvdec0: qos@fdf62000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf62000 0x0 0x20>;
+	};
+
+	qos_rkvdec1: qos@fdf63000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf63000 0x0 0x20>;
+	};
+
+	qos_av1: qos@fdf64000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf64000 0x0 0x20>;
+	};
+
+	qos_iep: qos@fdf66000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf66000 0x0 0x20>;
+	};
+
+	qos_jpeg_dec: qos@fdf66200 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf66200 0x0 0x20>;
+	};
+
+	qos_jpeg_enc0: qos@fdf66400 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf66400 0x0 0x20>;
+	};
+
+	qos_jpeg_enc1: qos@fdf66600 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf66600 0x0 0x20>;
+	};
+
+	qos_jpeg_enc2: qos@fdf66800 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf66800 0x0 0x20>;
+	};
+
+	qos_jpeg_enc3: qos@fdf66a00 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf66a00 0x0 0x20>;
+	};
+
+	qos_rga2_mro: qos@fdf66c00 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf66c00 0x0 0x20>;
+	};
+
+	qos_rga2_mwo: qos@fdf66e00 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf66e00 0x0 0x20>;
+	};
+
+	qos_rga3_0: qos@fdf67000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf67000 0x0 0x20>;
+	};
+
+	qos_vdpu: qos@fdf67200 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf67200 0x0 0x20>;
+	};
+
+	qos_npu1: qos@fdf70000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf70000 0x0 0x20>;
+	};
+
+	qos_npu2: qos@fdf71000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf71000 0x0 0x20>;
+	};
+
+	qos_npu0_mwr: qos@fdf72000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf72000 0x0 0x20>;
+	};
+
+	qos_npu0_mro: qos@fdf72200 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf72200 0x0 0x20>;
+	};
+
+	qos_mcu_npu: qos@fdf72400 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf72400 0x0 0x20>;
+	};
+
+	qos_hdcp0: qos@fdf80000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf80000 0x0 0x20>;
+	};
+
+	qos_hdcp1: qos@fdf81000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf81000 0x0 0x20>;
+	};
+
+	qos_hdmirx: qos@fdf81200 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf81200 0x0 0x20>;
+	};
+
+	qos_vop_m0: qos@fdf82000 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf82000 0x0 0x20>;
+	};
+
+	qos_vop_m1: qos@fdf82200 {
+		compatible = "rockchip,rk3588-qos", "syscon";
+		reg = <0x0 0xfdf82200 0x0 0x20>;
+	};
+
 };
 
 #include "rk3588s-pinctrl.dtsi"
