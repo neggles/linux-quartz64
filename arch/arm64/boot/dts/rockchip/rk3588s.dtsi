@@ -677,6 +677,70 @@
 		status = "disabled";
 	};
 
+	spi0: spi@feb00000 {
+		compatible = "rockchip,rk3588-spi", "rockchip,rk3066-spi";
+		reg = <0x0 0xfeb00000 0x0 0x1000>;
+		interrupts = <GIC_SPI 326 IRQ_TYPE_LEVEL_HIGH>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&cru CLK_SPI0>, <&cru PCLK_SPI0>;
+		clock-names = "spiclk", "apb_pclk";
+		dmas = <&dmac0 14>, <&dmac0 15>;
+		dma-names = "tx", "rx";
+		pinctrl-names = "default";
+		pinctrl-0 = <&spi0m0_cs0 &spi0m0_cs1 &spi0m0_pins>;
+		num-cs = <2>;
+		status = "disabled";
+	};
+
+	spi1: spi@feb10000 {
+		compatible = "rockchip,rk3588-spi", "rockchip,rk3066-spi";
+		reg = <0x0 0xfeb10000 0x0 0x1000>;
+		interrupts = <GIC_SPI 327 IRQ_TYPE_LEVEL_HIGH>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&cru CLK_SPI1>, <&cru PCLK_SPI1>;
+		clock-names = "spiclk", "apb_pclk";
+		dmas = <&dmac0 16>, <&dmac0 17>;
+		dma-names = "tx", "rx";
+		pinctrl-names = "default";
+		pinctrl-0 = <&spi1m1_cs0 &spi1m1_cs1 &spi1m1_pins>;
+		num-cs = <2>;
+		status = "disabled";
+	};
+
+	spi2: spi@feb20000 {
+		compatible = "rockchip,rk3588-spi", "rockchip,rk3066-spi";
+		reg = <0x0 0xfeb20000 0x0 0x1000>;
+		interrupts = <GIC_SPI 328 IRQ_TYPE_LEVEL_HIGH>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&cru CLK_SPI2>, <&cru PCLK_SPI2>;
+		clock-names = "spiclk", "apb_pclk";
+		dmas = <&dmac1 15>, <&dmac1 16>;
+		dma-names = "tx", "rx";
+		pinctrl-names = "default";
+		pinctrl-0 = <&spi2m2_cs0 &spi2m2_cs1 &spi2m2_pins>;
+		num-cs = <2>;
+		status = "disabled";
+	};
+
+	spi3: spi@feb30000 {
+		compatible = "rockchip,rk3588-spi", "rockchip,rk3066-spi";
+		reg = <0x0 0xfeb30000 0x0 0x1000>;
+		interrupts = <GIC_SPI 329 IRQ_TYPE_LEVEL_HIGH>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&cru CLK_SPI3>, <&cru PCLK_SPI3>;
+		clock-names = "spiclk", "apb_pclk";
+		dmas = <&dmac1 17>, <&dmac1 18>;
+		dma-names = "tx", "rx";
+		pinctrl-names = "default";
+		pinctrl-0 = <&spi3m1_cs0 &spi3m1_cs1 &spi3m1_pins>;
+		num-cs = <2>;
+		status = "disabled";
+	};
+
 	uart0: serial@fd890000 {
 		compatible = "rockchip,rk3588-uart", "snps,dw-apb-uart";
 		reg = <0x0 0xfd890000 0x0 0x100>;
