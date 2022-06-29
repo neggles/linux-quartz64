@@ -33,6 +33,11 @@ static const struct resource rk805_key_resources[] = {
 	DEFINE_RES_IRQ(RK805_IRQ_PWRON_FALL),
 };
 
+static struct resource rk806_pwrkey_resources[] = {
+	DEFINE_RES_IRQ(RK806_IRQ_PWRON_FALL),
+	DEFINE_RES_IRQ(RK806_IRQ_PWRON_RISE),
+};
+
 static const struct resource rk817_pwrkey_resources[] = {
 	DEFINE_RES_IRQ(RK817_IRQ_PWRON_RISE),
 	DEFINE_RES_IRQ(RK817_IRQ_PWRON_FALL),
@@ -55,6 +60,16 @@ static const struct mfd_cell rk805s[] = {
 	{	.name = "rk805-pwrkey",
 		.num_resources = ARRAY_SIZE(rk805_key_resources),
 		.resources = &rk805_key_resources[0],
+	},
+};
+
+static const struct mfd_cell rk806s[] = {
+	{ .name = "rk805-pinctrl", },
+	{ .name = "rk808-regulator", },
+	{
+		.name = "rk805-pwrkey",
+		.num_resources = ARRAY_SIZE(rk806_pwrkey_resources),
+		.resources = &rk806_pwrkey_resources[0],
 	},
 };
 
@@ -110,6 +125,12 @@ static const struct rk808_reg_data rk805_pre_init_reg[] = {
 				 RK805_BUCK4_ILMAX_3500MA},
 	{RK805_BUCK4_CONFIG_REG, BUCK_ILMIN_MASK, BUCK_ILMIN_400MA},
 	{RK805_THERMAL_REG, TEMP_HOTDIE_MSK, TEMP115C},
+};
+
+static const struct rk808_reg_data rk806_pre_init_reg[] = {
+	{ RK806_GPIO_INT_CONFIG, RK806_INT_POL_MSK, RK806_INT_POL_L },
+	{ RK806_SYS_CFG3, RK806_SLAVE_RESTART_FUN_MSK, RK806_SLAVE_RESTART_FUN_EN },
+	{ RK806_SYS_OPTION, RK806_SYS_ENB2_2M_MSK, RK806_SYS_ENB2_2M_EN },
 };
 
 static const struct rk808_reg_data rk808_pre_init_reg[] = {
@@ -262,6 +283,27 @@ static const struct regmap_irq rk805_irqs[] = {
 	},
 };
 
+static const struct regmap_irq rk806_irqs[] = {
+	/* INT_STS0 IRQs */
+	REGMAP_IRQ_REG(RK806_IRQ_PWRON_FALL, 0, RK806_INT_STS_PWRON_FALL),
+	REGMAP_IRQ_REG(RK806_IRQ_PWRON_RISE, 0, RK806_INT_STS_PWRON_RISE),
+	REGMAP_IRQ_REG(RK806_IRQ_PWRON, 0, RK806_INT_STS_PWRON),
+	REGMAP_IRQ_REG(RK806_IRQ_PWRON_LP, 0, RK806_INT_STS_PWRON_LP),
+	REGMAP_IRQ_REG(RK806_IRQ_HOTDIE, 0, RK806_INT_STS_HOTDIE),
+	REGMAP_IRQ_REG(RK806_IRQ_VDC_RISE, 0, RK806_INT_STS_VDC_RISE),
+	REGMAP_IRQ_REG(RK806_IRQ_VDC_FALL, 0, RK806_INT_STS_VDC_FALL),
+	REGMAP_IRQ_REG(RK806_IRQ_VB_LO, 0, RK806_INT_STS_VB_LO),
+	/* INT_STS1 IRQs */
+	REGMAP_IRQ_REG(RK806_IRQ_REV0, 1, RK806_INT_STS_REV0),
+	REGMAP_IRQ_REG(RK806_IRQ_REV1, 1, RK806_INT_STS_REV1),
+	REGMAP_IRQ_REG(RK806_IRQ_REV2, 1, RK806_INT_STS_REV2),
+	REGMAP_IRQ_REG(RK806_IRQ_CRC_ERROR, 1, RK806_INT_STS_CRC_ERROR),
+	REGMAP_IRQ_REG(RK806_IRQ_SLP3_GPIO, 1, RK806_INT_STS_SLP3_GPIO),
+	REGMAP_IRQ_REG(RK806_IRQ_SLP2_GPIO, 1, RK806_INT_STS_SLP2_GPIO),
+	REGMAP_IRQ_REG(RK806_IRQ_SLP1_GPIO, 1, RK806_INT_STS_SLP1_GPIO),
+	REGMAP_IRQ_REG(RK806_IRQ_WDT, 1, RK806_INT_STS_WDT),
+};
+
 static const struct regmap_irq rk808_irqs[] = {
 	/* INT_STS */
 	[RK808_IRQ_VOUT_LO] = {
@@ -412,6 +454,18 @@ static struct regmap_irq_chip rk805_irq_chip = {
 	.init_ack_masked = true,
 };
 
+static struct regmap_irq_chip rk806_irq_chip = {
+	.name = "rk806",
+	.irqs = rk806_irqs,
+	.num_irqs = ARRAY_SIZE(rk806_irqs),
+	.num_regs = 2,
+	.irq_reg_stride = 2,
+	.mask_base = RK806_INT_MSK0,
+	.status_base = RK806_INT_STS0,
+	.ack_base = RK806_INT_STS0,
+	.init_ack_masked = true,
+};
+
 static const struct regmap_irq_chip rk808_irq_chip = {
 	.name = "rk808",
 	.irqs = rk808_irqs,
@@ -538,6 +592,7 @@ int rk8xx_probe(struct device *dev, int variant, unsigned int irq, struct regmap
 	struct rk808 *rk808;
 	const struct rk808_reg_data *pre_init_reg;
 	const struct mfd_cell *cells;
+	bool dual_support = false;
 	int nr_pre_init_regs;
 	int nr_cells;
 	int ret;
@@ -558,6 +613,14 @@ int rk8xx_probe(struct device *dev, int variant, unsigned int irq, struct regmap
 		nr_pre_init_regs = ARRAY_SIZE(rk805_pre_init_reg);
 		cells = rk805s;
 		nr_cells = ARRAY_SIZE(rk805s);
+		break;
+	case RK806_ID:
+		rk808->regmap_irq_chip = &rk806_irq_chip;
+		pre_init_reg = rk806_pre_init_reg;
+		nr_pre_init_regs = ARRAY_SIZE(rk806_pre_init_reg);
+		cells = rk806s;
+		nr_cells = ARRAY_SIZE(rk806s);
+		dual_support = true;
 		break;
 	case RK808_ID:
 		rk808->regmap_irq_chip = &rk808_irq_chip;
@@ -592,7 +655,7 @@ int rk8xx_probe(struct device *dev, int variant, unsigned int irq, struct regmap
 		return dev_err_probe(dev, -EINVAL, "No interrupt support, no core IRQ\n");
 
 	ret = devm_regmap_add_irq_chip(dev, rk808->regmap, irq,
-				       IRQF_ONESHOT, -1,
+				       IRQF_ONESHOT | (dual_support ? IRQF_SHARED : 0), -1,
 				       rk808->regmap_irq_chip, &rk808->irq_data);
 	if (ret)
 		return dev_err_probe(dev, ret, "Failed to add irq_chip\n");
@@ -607,7 +670,7 @@ int rk8xx_probe(struct device *dev, int variant, unsigned int irq, struct regmap
 					     pre_init_reg[i].addr);
 	}
 
-	ret = devm_mfd_add_devices(dev, PLATFORM_DEVID_NONE,
+	ret = devm_mfd_add_devices(dev, dual_support ? PLATFORM_DEVID_AUTO : PLATFORM_DEVID_NONE,
 			      cells, nr_cells, NULL, 0,
 			      regmap_irq_get_domain(rk808->irq_data));
 	if (ret)
