@@ -9,12 +9,13 @@
 #include <dt-bindings/pinctrl/rockchip.h>
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/leds/common.h>
+#include <dt-bindings/interrupt-controller/irq.h>
 #include "rk3588.dtsi"
 #include "rk3588-rk806-dual.dtsi"
 
 / {
 	model = "Pine64 RK3588 QuartzPro64 Board";
-	compatible = "pine64,quartzpro64", "rockchip,rk3588-evb1-v10", "rockchip,rk3588";
+	compatible = "pine64,quartzpro64", "rockchip,rk3588";
 
 	chosen {
 		stdout-path = "serial2:1500000n8";
@@ -228,6 +229,12 @@
 	// mmc-hs400-enhanced-strobe;
 	vmmc-supply = <&vcc_3v3_s0>;
 	vqmmc-supply = <&vcc_1v8_s0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&emmc_bus8
+		     &emmc_clk
+		     &emmc_cmd
+		     &emmc_data_strobe
+		     &emmc_rstnout>;
 	status = "okay";
 };
 
@@ -246,11 +253,8 @@
 	status = "okay";
 };
 
-&sdio {
-
-};
-
 &uart2 {
+	pinctrl-names = "default";
 	pinctrl-0 = <&uart2m0_xfer>;
 	status = "okay";
 };
@@ -258,11 +262,20 @@
 &uart8 {
 	status = "okay";
 	pinctrl-names = "default";
-	pinctrl-0 = <&uart8m1_xfer &uart8m1_ctsn>;
+	pinctrl-0 = <&uart8m1_xfer &uart8m1_rtsn>;
 	uart-has-rtscts;
 
 	bluetooth {
 		compatible = "brcm,bcm4375-bt";
+		max-speed = <921600>;
+		clocks = <&hym8563>;
+		clock-names = "lpo";
+		pinctrl-names = "default";
+		pinctrl-0 = <&bt_pwren_gpio &bt_wake_gpio &bt_irq_gpio>;
+		shutdown-gpios = <&gpio3 RK_PA6 GPIO_ACTIVE_HIGH>;
+		device-wakeup-gpios = <&gpio3 RK_PA1 GPIO_ACTIVE_HIGH>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <RK_PA0 GPIO_ACTIVE_HIGH>;
 		status = "disabled";
 	};
 };
@@ -284,8 +297,51 @@
 	};
 };
 
+&combphy1 {
+	// pinctrl-names = "default";
+	// pinctrl-0 = <&pcie30x1m1_pins>;
+	phy-supply = <&vcc3v3_pi6c_05>;
+	// rockchip,ext-refclk;
+	status = "disabled";
+};
+
+&pcie2x1l0 {
+	reset-gpios = <&gpio4 RK_PA5 GPIO_ACTIVE_HIGH>;
+	vpcie3v3-supply = <&vcc_3v3_s0>;
+	status = "disabled";
+
+	// ap6275p: wifi@0,0 {
+	// 	compatible = "brcm,bcm43455";
+	// 	reg = <0x0000 0 0 0 0>;
+	// 	pinctrl-0 = <&wifi_wake_host_h &wifi_pwr_en_h>;
+	// 	pinctrl-names = "default";
+	// 	wakeup-source;
+	// 	interrupt-parent = <&gpio3>;
+	// 	interrupts = <RK_PA7 IRQ_TYPE_LEVEL_HIGH>;
+	// 	reset-gpios = <&gpio3 RK_PB1 GPIO_ACTIVE_LOW>;
+	// };
+};
+
+&combphy2 {
+	// pinctrl-names = "default";
+	// pinctrl-0 = <&pcie30x1m1_pins>;
+	phy-supply = <&vcc3v3_pi6c_05>;
+	// rockchip,ext-refclk;
+	status = "disabled";
+};
+
+&pcie2x1l1 {
+	reset-gpios = <&gpio4 RK_PA2 GPIO_ACTIVE_HIGH>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&rtl8111_isolate>;
+	vpcie3v3-supply = <&vcc_3v3_s0>;
+	status = "disabled";
+};
+
 &pcie30phy {
-	data-lanes = <1 2 3 4>;
+	data-lanes = <1 1 1 1>;
+	// pinctrl-names = "default";
+	// pinctrl-0 = <&pcie30x4m1_pins>;
 	phy-supply = <&vcc3v3_pi6c_05>;
 	status = "okay";
 };
@@ -293,8 +349,6 @@
 &pcie3x4 {
 	/* PCIe 3.0 x4 open-ended slot */
 	num-lanes = <4>;
-	pinctrl-0 = <&pcie30x4m1_pins>;
-	pinctrl-names = "default";
 	reset-gpios = <&gpio4 RK_PB6 GPIO_ACTIVE_HIGH>;
 	vpcie3v3-supply = <&vcc3v3_pcie30>;
 	status = "okay";
@@ -332,6 +386,30 @@
 
 		vcc5v0_usbc_host_en_h: typec5v-pwren {
 			rockchip,pins = <0 RK_PC5 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	wireless-bluetooth {
+		bt_pwren_gpio: bt-pwren-gpio {
+			rockchip,pins = <3 RK_PA6 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		bt_wake_gpio: bt-wake-gpio {
+			rockchip,pins = <3 RK_PA1 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		bt_irq_gpio: bt-irq-gpio {
+			rockchip,pins = <3 RK_PA0 RK_FUNC_GPIO &pcfg_pull_down>;
+		};
+	};
+
+	wireless-wlan {
+		wifi_wake_host_h: wifi-wake-host-h {
+			rockchip,pins = <3 RK_PA7 RK_FUNC_GPIO &pcfg_pull_down>;
+		};
+
+		wifi_pwr_en_h: wifi-pwren-h {
+			rockchip,pins = <3 RK_PB1 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 	};
 };
