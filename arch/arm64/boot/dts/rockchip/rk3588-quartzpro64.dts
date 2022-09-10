@@ -9,12 +9,13 @@
 #include <dt-bindings/pinctrl/rockchip.h>
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/leds/common.h>
+#include <dt-bindings/interrupt-controller/irq.h>
 #include "rk3588.dtsi"
 #include "rk3588-rk806-dual.dtsi"
 
 / {
 	model = "Pine64 RK3588 QuartzPro64 Board";
-	compatible = "pine64,quartzpro64", "rockchip,rk3588-evb1-v10", "rockchip,rk3588";
+	compatible = "pine64,quartzpro64", "rockchip,rk3588";
 
 	chosen {
 		stdout-path = "serial2:1500000n8";
@@ -163,6 +164,12 @@
 	// mmc-hs400-enhanced-strobe;
 	vmmc-supply = <&vcc_3v3_s0>;
 	vqmmc-supply = <&vcc_1v8_s0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&emmc_bus8
+		     &emmc_clk
+		     &emmc_cmd
+		     &emmc_data_strobe
+		     &emmc_rstnout>;
 	status = "okay";
 };
 
@@ -181,11 +188,8 @@
 	status = "okay";
 };
 
-&sdio {
-
-};
-
 &uart2 {
+	pinctrl-names = "default";
 	pinctrl-0 = <&uart2m0_xfer>;
 	status = "okay";
 };
@@ -193,11 +197,20 @@
 &uart8 {
 	status = "okay";
 	pinctrl-names = "default";
-	pinctrl-0 = <&uart8m1_xfer &uart8m1_ctsn>;
+	pinctrl-0 = <&uart8m1_xfer &uart8m1_rtsn>;
 	uart-has-rtscts;
 
 	bluetooth {
 		compatible = "brcm,bcm4375-bt";
+		max-speed = <921600>;
+		clocks = <&hym8563>;
+		clock-names = "lpo";
+		pinctrl-names = "default";
+		pinctrl-0 = <&bt_pwren_gpio &bt_wake_gpio &bt_irq_gpio>;
+		shutdown-gpios = <&gpio3 RK_PA6 GPIO_ACTIVE_HIGH>;
+		device-wakeup-gpios = <&gpio3 RK_PA1 GPIO_ACTIVE_HIGH>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <RK_PA0 GPIO_ACTIVE_HIGH>;
 		status = "disabled";
 	};
 };
@@ -239,6 +252,30 @@
 
 		vcc5v0_usbc_host_en_h: typec5v-pwren {
 			rockchip,pins = <0 RK_PC5 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	wireless-bluetooth {
+		bt_pwren_gpio: bt-pwren-gpio {
+			rockchip,pins = <3 RK_PA6 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		bt_wake_gpio: bt-wake-gpio {
+			rockchip,pins = <3 RK_PA1 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		bt_irq_gpio: bt-irq-gpio {
+			rockchip,pins = <3 RK_PA0 RK_FUNC_GPIO &pcfg_pull_down>;
+		};
+	};
+
+	wireless-wlan {
+		wifi_wake_host_h: wifi-wake-host-h {
+			rockchip,pins = <3 RK_PA7 RK_FUNC_GPIO &pcfg_pull_down>;
+		};
+
+		wifi_pwr_en_h: wifi-pwren-h {
+			rockchip,pins = <3 RK_PB1 RK_FUNC_GPIO &pcfg_pull_up>;
 		};
 	};
 };
