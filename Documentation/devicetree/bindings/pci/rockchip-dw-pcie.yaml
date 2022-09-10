@@ -23,6 +23,7 @@ properties:
   compatible:
     items:
       - const: rockchip,rk3568-pcie
+      - const: rockchip,rk3588-pcie
 
   reg:
     items:
