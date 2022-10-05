@@ -38,7 +38,7 @@
 
 #define RK3588_BIFURCATION_LANE_0_1		BIT(0)
 #define RK3588_BIFURCATION_LANE_2_3		BIT(1)
-#define RK3588_LANE_AGGREGATION		BIT(2)
+#define RK3588_LANE_AGGREGATION			BIT(2)
 
 struct rockchip_p3phy_ops;
 
