@@ -16,11 +16,6 @@
 	model = "Pine64 RK3588 QuartzPro64 Board";
 	compatible = "pine64,quartzpro64", "rockchip,rk3588-evb1-v10", "rockchip,rk3588";
 
-	aliases {
-		mmc0 = &sdhci;
-		mmc1 = &sdmmc;
-	};
-
 	chosen {
 		stdout-path = "serial2:1500000n8";
 	};
