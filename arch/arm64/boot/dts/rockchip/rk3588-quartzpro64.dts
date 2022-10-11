@@ -301,14 +301,15 @@
 	// pinctrl-names = "default";
 	// pinctrl-0 = <&pcie30x1m1_pins>;
 	phy-supply = <&vcc3v3_pi6c_05>;
-	// rockchip,ext-refclk;
-	status = "disabled";
+	status = "okay";
 };
 
 &pcie2x1l0 {
 	reset-gpios = <&gpio4 RK_PA5 GPIO_ACTIVE_HIGH>;
 	vpcie3v3-supply = <&vcc_3v3_s0>;
-	status = "disabled";
+	pinctrl-0 = <&wifi_wake_host_h &wifi_pwr_en_h>;
+	pinctrl-names = "default";
+	status = "okay";
 
 	// ap6275p: wifi@0,0 {
 	// 	compatible = "brcm,bcm43455";
@@ -326,8 +327,7 @@
 	// pinctrl-names = "default";
 	// pinctrl-0 = <&pcie30x1m1_pins>;
 	phy-supply = <&vcc3v3_pi6c_05>;
-	// rockchip,ext-refclk;
-	status = "disabled";
+	status = "okay";
 };
 
 &pcie2x1l1 {
@@ -335,7 +335,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&rtl8111_isolate>;
 	vpcie3v3-supply = <&vcc_3v3_s0>;
-	status = "disabled";
+	status = "okay";
 };
 
 &pcie30phy {
