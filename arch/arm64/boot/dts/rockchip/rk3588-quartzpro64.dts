@@ -187,13 +187,9 @@
 };
 
 &gmac0 {
+	label = "RJ45";
 	phy-mode = "rgmii-rxid";
 	clock_in_out = "output";
-
-	snps,reset-gpio = <&gpio4 RK_PB3 GPIO_ACTIVE_LOW>;
-	snps,reset-active-low;
-	/* Reset time is 20ms, 100ms for rtl8211f */
-	snps,reset-delays-us = <0 20000 100000>;
 
 	pinctrl-names = "default";
 	pinctrl-0 = <&gmac0_miim
@@ -215,6 +211,10 @@
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <1>;
 		max-speed = <1000>;
+		/* Reset time is 20ms, 100ms for rtl8211f */
+		reset-gpios = <&gpio4 RK_PB3 GPIO_ACTIVE_LOW>;
+		reset-assert-us = <20000>;
+		reset-deassert-us = <100000>;
 	};
 };
 
