@@ -28,6 +28,17 @@
 		regulator-max-microvolt = <5000000>;
 		vin-supply = <&vcc12v_dcin>;
 	};
+
+	/* using schematic label to avoid naming collision with vcc3v3_sd */
+	sd_pwr: sd-pwr-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "sd_pwr";
+		regulator-always-on;
+		regulator-boot-on;
+		regulator-min-microvolt = <3000000>;
+		regulator-max-microvolt = <3000000>;
+		vin-supply = <&vcc12v_dcin>;
+	};
 };
 
 &gmac1 {
@@ -119,13 +130,7 @@
 };
 
 &sdmmc0 {
-	vmmc-supply = <&sdmmc_pwr>;
-	status = "okay";
-};
-
-&sdmmc_pwr {
-	regulator-min-microvolt = <3300000>;
-	regulator-max-microvolt = <3300000>;
+	vmmc-supply = <&sd_pwr>;
 	status = "okay";
 };
 
