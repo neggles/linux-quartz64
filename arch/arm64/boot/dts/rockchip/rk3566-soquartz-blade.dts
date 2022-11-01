@@ -38,11 +38,20 @@
 		regulator-max-microvolt = <3300000>;
 		vin-supply = <&vbus>;
 	};
+
+	fan0: pwm-fan {
+		compatible = "pwm-fan";
+		#cooling-cells = <2>;
+		pwms = <&gp7101 0>;
+		fan-supply = <&vcc5v_dcin>;
+		cooling-levels = <0 102 170 230>;
+		status = "disabled";
+	};
 };
 
 &vbus {
 	vin-supply = <&vcc5v_dcin>;
-}
+};
 
 &gmac1 {
 	status = "okay";
@@ -55,7 +64,12 @@
  */
 &i2c1 {
 	status = "okay";
-
+	gp7101: pwm-controller@58 {
+		compatible = "xlwei,gp7101";
+		reg = <0x58>;
+		#pwm-cells = <1>;
+		status = "disabled";
+	};
 };
 
 /*
@@ -164,7 +178,7 @@
 };
 
 &usb2phy0_otg {
-	phy-supply = <&vcc_5v>;
+	phy-supply = <&vcc5v_dcin>;
 	status = "okay";
 };
 
@@ -173,5 +187,5 @@
 };
 
 &vbus {
-	vin-supply = <&vcc_5v>;
+	vin-supply = <&vcc5v_dcin>;
 };
