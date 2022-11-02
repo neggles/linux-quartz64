@@ -176,6 +176,82 @@
 	mem-supply = <&vdd_cpu_big1_mem_s0>;
 };
 
+&cluster0_opp_table {
+	/delete-node/ opp-408000000;
+	/delete-node/ opp-600000000;
+	/delete-node/ opp-816000000;
+};
+
+&cluster1_opp_table {
+	/delete-node/ opp-408000000;
+	/delete-node/ opp-600000000;
+	/delete-node/ opp-816000000;
+
+	opp-2256000000 {
+		opp-supported-hw = <0xfd 0x13>;
+		opp-hz = /bits/ 64 <2256000000>;
+		opp-microvolt = <1000000 1000000 1000000>,
+				<1000000 1000000 1000000>;
+		clock-latency-ns = <40000>;
+	};
+	opp-2304000000 {
+		opp-supported-hw = <0xfd 0x24>;
+		opp-hz = /bits/ 64 <2304000000>;
+		opp-microvolt = <1000000 1000000 1000000>,
+				<1000000 1000000 1000000>;
+		clock-latency-ns = <40000>;
+	};
+	opp-2352000000 {
+		opp-supported-hw = <0xfd 0x48>;
+		opp-hz = /bits/ 64 <2352000000>;
+		opp-microvolt = <1000000 1000000 1000000>,
+				<1000000 1000000 1000000>;
+		clock-latency-ns = <40000>;
+	};
+	opp-2400000000 {
+		opp-supported-hw = <0xfd 0x80>;
+		opp-hz = /bits/ 64 <2400000000>;
+		opp-microvolt = <1000000 1000000 1000000>,
+				<1000000 1000000 1000000>;
+		clock-latency-ns = <40000>;
+	};
+};
+
+&cluster2_opp_table {
+	/delete-node/ opp-408000000;
+	/delete-node/ opp-600000000;
+	/delete-node/ opp-816000000;
+
+	opp-2256000000 {
+		opp-supported-hw = <0xfd 0x13>;
+		opp-hz = /bits/ 64 <2256000000>;
+		opp-microvolt = <1000000 1000000 1000000>,
+				<1000000 1000000 1000000>;
+		clock-latency-ns = <40000>;
+	};
+	opp-2304000000 {
+		opp-supported-hw = <0xfd 0x24>;
+		opp-hz = /bits/ 64 <2304000000>;
+		opp-microvolt = <1000000 1000000 1000000>,
+				<1000000 1000000 1000000>;
+		clock-latency-ns = <40000>;
+	};
+	opp-2352000000 {
+		opp-supported-hw = <0xfd 0x48>;
+		opp-hz = /bits/ 64 <2352000000>;
+		opp-microvolt = <1000000 1000000 1000000>,
+				<1000000 1000000 1000000>;
+		clock-latency-ns = <40000>;
+	};
+	opp-2400000000 {
+		opp-supported-hw = <0xfd 0x80>;
+		opp-hz = /bits/ 64 <2400000000>;
+		opp-microvolt = <1000000 1000000 1000000>,
+				<1000000 1000000 1000000>;
+		clock-latency-ns = <40000>;
+	};
+};
+
 &tsadc {
 	status = "okay";
 };
