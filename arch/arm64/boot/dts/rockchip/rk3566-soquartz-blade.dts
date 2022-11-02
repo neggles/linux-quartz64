@@ -2,6 +2,11 @@
 
 /dts-v1/;
 
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/leds/common.h>
+#include <dt-bindings/pinctrl/rockchip.h>
+
 #include "rk3566-soquartz.dtsi"
 
 / {
@@ -29,9 +34,9 @@
 	};
 
 	/* labeled VCC_SSD in schematic */
-	vcc3v3_pcie: vcc3v3-pcie-regulator {
+	vcc3v3_pcie_p: vcc3v3-pcie-regulator {
 		compatible = "regulator-fixed";
-		regulator-name = "vcc3v3_pcie";
+		regulator-name = "vcc3v3_pcie_p";
 		regulator-always-on;
 		regulator-boot-on;
 		regulator-min-microvolt = <3300000>;
@@ -119,10 +124,16 @@
 
 &led_diy {
 	status = "okay";
+	color = <LED_COLOR_ID_RED>;
+	function = LED_FUNCTION_DISK_ACTIVITY;
+	linux,default-trigger = "disk-activity";
 };
 
 &led_work {
 	status = "okay";
+	color = <LED_COLOR_ID_GREEN>;
+	function = LED_FUNCTION_STATUS;
+	linux,default-trigger = "heartbeat";
 };
 
 &rgmii_phy1 {
@@ -188,4 +199,29 @@
 
 &vbus {
 	vin-supply = <&vcc5v_dcin>;
+};
+
+&pcie2x1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pcie_reset_h>;
+	reset-gpios = <&gpio1 RK_PB2 GPIO_ACTIVE_HIGH>;
+	vpcie3v3-supply = <&vcc3v3_pcie_p>;
+	status = "okay";
+};
+
+&combphy2 {
+	status = "okay";
+	phy-supply = <&vcc3v3_sys>;
+};
+
+&pinctrl {
+	pcie {
+		pcie_clkreq_h: pcie-clkreq-h {
+			rockchip,pins = <1 RK_PB0 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+
+		pcie_reset_h: pcie-reset-h {
+			rockchip,pins = <1 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
 };
