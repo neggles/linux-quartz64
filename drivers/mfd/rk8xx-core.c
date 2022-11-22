@@ -604,6 +604,7 @@ int rk8xx_probe(struct device *dev, int variant, unsigned int irq, struct regmap
 	rk808->dev = dev;
 	rk808->variant = variant;
 	rk808->regmap = regmap;
+	rk808->pwron_long_press_time = 0;
 	dev_set_drvdata(dev, rk808);
 
 	switch (rk808->variant) {
@@ -698,6 +699,28 @@ int rk8xx_probe(struct device *dev, int variant, unsigned int irq, struct regmap
 			break;
 		}
 	}
+
+	device_property_read_u32(dev,
+				"rockchip,pwron-long-press-time",
+				&rk808->pwron_long_press_time);
+	switch (rk808->pwron_long_press_time) {
+	case 0:
+	case 1:
+	case 2:
+	case 3:
+		break;
+	default:
+		dev_warn(dev, "invalid pwron long press time %d, use default 6s", &rk808->pwron_long_press_time);
+		rk808->pwron_long_press_time = RK817_PWRON_LP_OFF_TIME_6S;
+		break;
+	}
+	ret = regmap_update_bits(rk808->regmap,
+				RK817_PWRON_KEY_REG,
+				RK817_PWRON_LP_OFF_TIME_MASK,
+				rk808->pwron_long_press_time);
+	if (ret)
+		return dev_err_probe(dev, ret, "0x%x write err\n",
+					RK817_PWRON_KEY_REG);
 
 	return 0;
 }

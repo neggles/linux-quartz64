@@ -1051,6 +1051,12 @@ enum rk809_reg_id {
 
 #define RK817_ON_SOURCE_REG		0xf5
 #define RK817_OFF_SOURCE_REG		0xf6
+#define RK817_PWRON_KEY_REG		0xf7
+#define RK817_PWRON_LP_OFF_TIME_MASK	GENMASK(5, 4)
+#define RK817_PWRON_LP_OFF_6S		0
+#define RK817_PWRON_LP_OFF_8S		1
+#define RK817_PWRON_LP_OFF_10S		2
+#define RK817_PWRON_LP_OFF_12S		3
 
 /* INTERRUPT REGISTER */
 #define RK817_INT_STS_REG0		0xf8
@@ -1200,6 +1206,7 @@ struct rk808 {
 	struct regmap_irq_chip_data	*irq_data;
 	struct regmap			*regmap;
 	long				variant;
+	unsigned int			pwron_long_press_time;
 	const struct regmap_config	*regmap_cfg;
 	const struct regmap_irq_chip	*regmap_irq_chip;
 };
