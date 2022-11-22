@@ -59,6 +59,21 @@
 		vin-supply = <&vcc12v_dcin>;
 	};
 
+	osc24576k: osc24576k {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <24576000>;
+	};
+
+	i2s1_mclkin: i2s1-mclkin {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clocks = <&osc24576k>;
+		clock-output-names = "i2s1_mclkin";
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2s1m1_mclk>;
+	};
+
 	codec_out: spdif-transmitter {
 		#sound-dai-cells = <0>;
 		compatible = "linux,spdif-dit";
@@ -84,8 +99,8 @@
 			reg = <0>;
 			format = "i2s";
 
-			// bitclock-master = <&r_codec_dai>;
-			// frame-master = <&r_codec_dai>;
+			bitclock-master = <&r_codec_dai>;
+			frame-master = <&r_codec_dai>;
 			mclk-fs = <256>;
 
 			r_cpu_dai: cpu {
@@ -95,13 +110,14 @@
 				dai-tdm-slot-num = <2>;
 				dai-tdm-slot-width = <32>;
 
-				clocks = <&cru I2S1_MCLKOUT_TX>;
-				system-clock-direction-out;
+				clocks = <&i2s1_mclkin>;
 			};
 
 			r_codec_dai: codec {
 				sound-dai = <&codec_in>;
+				clocks = <&osc24576k>;
 				system-clock-frequency = <24576000>;
+				system-clock-direction-out;
 			};
 		};
 
@@ -109,8 +125,8 @@
 			reg = <1>;
 			format = "i2s";
 
-			// bitclock-master = <&p_codec_dai>;
-			// frame-master = <&p_codec_dai>;
+			bitclock-master = <&p_codec_dai>;
+			frame-master = <&p_codec_dai>;
 			mclk-fs = <256>;
 
 			p_cpu_dai: cpu {
@@ -120,13 +136,14 @@
 				dai-tdm-slot-num = <2>;
 				dai-tdm-slot-width = <32>;
 
-				clocks = <&cru I2S1_MCLKOUT_TX>;
-				system-clock-direction-out;
+				clocks = <&i2s1_mclkin>;
 			};
 
 			p_codec_dai: codec {
 				sound-dai = <&codec_out>;
+				clocks = <&osc24576k>;
 				system-clock-frequency = <24576000>;
+				system-clock-direction-out;
 			};
 		};
 	};
