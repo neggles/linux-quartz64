@@ -373,6 +373,15 @@
 	};
 };
 
+&combphy0 {
+	phy-supply = <&vcc3v3_pi6c_05>;
+	status = "okay";
+};
+
+&sata0 {
+	status = "okay";
+};
+
 &combphy1 {
 	// pinctrl-names = "default";
 	// pinctrl-0 = <&pcie30x1m1_pins>;

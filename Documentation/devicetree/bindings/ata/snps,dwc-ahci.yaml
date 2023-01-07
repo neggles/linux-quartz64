@@ -27,6 +27,10 @@ properties:
         items:
           - const: rockchip,rk3568-dwc-ahci
           - const: snps,dwc-ahci
+      - description: Rockhip RK3588 AHCI controller
+        items:
+          - const: rockchip,rk3588-dwc-ahci
+          - const: snps,dwc-ahci
 
 patternProperties:
   "^sata-port@[0-9a-e]$":
