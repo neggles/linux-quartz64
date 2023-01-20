@@ -1,0 +1,119 @@
+config BES2600
+	tristate "BES2600 WLAN support"
+	select MAC80211
+	select CFG80211
+	select NL80211_TESTMODE
+	default m
+	help
+	  This is an experimental driver for the bes2600 chip-set.
+	  Enabling this option enables the generic driver without
+	  any platform support.
+
+if BES2600
+
+config BES2600_WLAN_SDIO
+	bool "SDIO bus interface support"
+	depends on MMC
+	default y
+	help
+	  This option enables the SDIO bus interface support for Bes2600
+	  WLAN driver. Say Y if you want to use SDIO.
+
+config BES2600_WLAN_USB
+	bool "USB bus interface support"
+	depends on USB
+	default n
+	help
+	  This option enables the USB bus interface support for Bes2600
+	  WLAN driver. Say Y if you want to use USB.
+
+config BES2600_WLAN_SPI
+	bool "SPI bus interface support"
+	depends on SPI
+	default n
+	help
+	  This option enables the SPI bus interface support for Bes2600
+	  WLAN driver. Say Y if you want to use USB.
+
+config BES2600_USE_GPIO_IRQ
+	bool "Use GPIO interrupt"
+	default n
+	help
+	  Say Y here if you want to include GPIO IRQ support instead of SDIO IRQ.
+	  If unsure, say N.
+
+config BES2600_5GHZ_SUPPORT
+	bool "5GHz band support"
+	default y
+	help
+	  Say Y if your device supports 5GHz band.
+	  If unsure, say N.
+
+config BES2600_WAPI_SUPPORT
+	bool "WAPI support"
+	default y
+	help
+	  Say Y if your compat-wireless support WAPI.
+	  If unsure, say N.
+
+config BES2600_USE_STE_EXTENSIONS
+	bool "STE extensions"
+	default n
+	help
+	  Say Y if you want to include STE extensions.
+	  If unsure, say N.
+
+config BES2600_DISABLE_BEACON_HINTS
+	bool "Disable 11d beacon hints"
+	default n
+	help
+	  Say Y if you want to disable 11d beacon hints.
+	  If unsure, say N.
+
+config BES2600_TESTMODE
+	bool "bes2600 testmode support"
+	select NL80211_TESTMODE
+	default n
+	help
+	  Say Y if you want to enable bes2600 testmode.
+	  If unsure, say N.
+
+menu "Driver debug features"
+
+config BES2600_DEBUGFS
+	bool "Expose driver internals to DebugFS (DEVELOPMENT)"
+	default y
+
+config BES2600_BH_DEBUG
+	bool "Enable low-level device communication logs (DEVELOPMENT)"
+
+config BES2600_WSM_DEBUG
+	bool "Enable WSM API debug messages (DEVELOPMENT)"
+
+config BES2600_WSM_DUMPS
+	bool "Verbose WSM API logging (DEVELOPMENT)"
+
+config BES2600_WSM_DUMPS_SHORT
+	bool "Dump only first x bytes (default 20) (DEVELOPMENT)"
+
+config BES2600_TXRX_DEBUG
+	bool "Enable TX/RX debug messages (DEVELOPMENT)"
+
+config BES2600_TX_POLICY_DEBUG
+	bool "Enable TX policy debug (DEVELOPMENT)"
+
+config BES2600_STA_DEBUG
+	bool "Enable STA/AP debug (DEVELOPMENT)"
+
+config BES2600_DUMP_ON_ERROR
+	bool "Dump kernel in case of critical error (DEVELOPMENT)"
+
+config BES2600_ITP
+	bool "Enable ITP DebugFS"
+	help
+	  Say Y if you want to include ITP code.
+	  If unsure, say N.
+
+endmenu
+
+endif # BES2600
