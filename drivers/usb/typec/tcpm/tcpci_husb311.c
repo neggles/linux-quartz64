@@ -10,8 +10,10 @@
 #include <linux/i2c.h>
 #include <linux/interrupt.h>
 #include <linux/kernel.h>
+#include <linux/mod_devicetable.h>
 #include <linux/module.h>
 #include <linux/regmap.h>
+#include <linux/regulator/consumer.h>
 #include <linux/usb/tcpm.h>
 #include <linux/usb/tcpci.h>
 
@@ -27,6 +29,7 @@ struct husb311_chip {
 	struct tcpci_data data;
 	struct tcpci *tcpci;
 	struct device *dev;
+	struct regulator *vbus;
 };
 
 static int husb311_write8(struct husb311_chip *chip, unsigned int reg, u8 val)
@@ -74,6 +77,25 @@ static int husb311_init(struct tcpci *tcpci, struct tcpci_data *tdata)
 		dev_err(chip->dev, "fail to init registers(%d)\n", ret);
 
 	return ret;
+}
+
+static int husb311_tcpc_set_vbus(struct tcpci *tcpci, struct tcpci_data *tdata,
+				 bool source, bool sink)
+{
+	struct husb311_chip *c = tdata_to_husb311(tdata);
+	int ret;
+
+	ret = regulator_is_enabled(chip->vbus);
+	if (ret < 0)
+		return ret;
+
+	if (ret && !source)
+		return regulator_disable(chip->vbus);
+
+	if (!ret && source)
+		return regulator_enable(chip->vbus);
+
+	return 0;
 }
 
 static irqreturn_t husb311_irq(int irq, void *dev_id)
@@ -142,6 +164,10 @@ static int husb311_probe(struct i2c_client *client, const struct i2c_device_id *
 	}
 
 	chip->data.init = husb311_init;
+	chip->vbus = devm_regulator_get_optional(dev, "vbus");
+	if (!IS_ERR(chip->vbus))
+		chip->data.set_vbus = husb311_tcpc_set_vbus;
+
 	chip->tcpci = tcpci_register_port(chip->dev, &chip->data);
 	if (IS_ERR(chip->tcpci))
 		return PTR_ERR(chip->tcpci);
