@@ -2371,6 +2371,9 @@ static int tcpm_register_source_caps(struct tcpm_port *port)
 	if (IS_ERR(port->partner_pd))
 		return PTR_ERR(port->partner_pd);
 
+	/* remove existing capabilities since got new one */
+	usb_power_delivery_unregister_capabilities(port->partner_source_caps);
+
 	memcpy(caps.pdo, port->source_caps, sizeof(u32) * port->nr_source_caps);
 	caps.role = TYPEC_SOURCE;
 
@@ -2393,6 +2396,9 @@ static int tcpm_register_sink_caps(struct tcpm_port *port)
 		port->partner_pd = usb_power_delivery_register(NULL, &desc);
 	if (IS_ERR(port->partner_pd))
 		return PTR_ERR(port->partner_pd);
+
+	/* remove existing capabilities since got new one */
+	usb_power_delivery_unregister_capabilities(port->partner_sink_caps);
 
 	memcpy(caps.pdo, port->sink_caps, sizeof(u32) * port->nr_sink_caps);
 	caps.role = TYPEC_SINK;
