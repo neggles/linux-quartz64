@@ -52,6 +52,12 @@ config TYPEC_TCPCI_MAXIM
 	  MAXIM TCPCI based Type-C/PD chip driver. Works with
 	  with Type-C Port Controller Manager.
 
+config TYPEC_TCPCI_HUSB311
+	tristate "Hynetek HUSB311 TCPCI based Type-C chip driver"
+	help
+	  Hynetek HUSB311 TCPCI based Type-C/PD chip driver. Works
+	  with Type-C Port Controller Manager.
+
 endif # TYPEC_TCPCI
 
 config TYPEC_FUSB302
