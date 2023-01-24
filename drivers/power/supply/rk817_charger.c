@@ -45,6 +45,20 @@ enum rk817_chg_cur {
 	CHG_0_5A,
 };
 
+/*
+ * Max input current read to/written from hardware register.
+ */
+enum rk817_in_cur {
+	IN_0_45A,
+	IN_0_08A,
+	IN_0_85A,
+	IN_1_5A,
+	IN_1_75A,
+	IN_2A,
+	IN_2_5A,
+	IN_3A,
+};
+
 struct rk817_charger {
 	struct device *dev;
 	struct rk808 *rk808;
@@ -94,6 +108,7 @@ struct rk817_charger {
 	int bat_charge_full_design_uah;
 	int bat_voltage_min_design_uv;
 	int bat_voltage_max_design_uv;
+	int in_max_current_ua;
 
 	/* Values updated periodically by driver for display. */
 	int charge_now_uah;
@@ -165,6 +180,50 @@ static int rk817_chg_cur_from_reg(u8 reg)
 	default:
 		return -EINVAL;
 	}
+}
+
+static int rk817_in_cur_to_reg(u32 in_cur_ua)
+{
+	if (in_cur_ua >= 3000000)
+		return IN_3A;
+	else if (in_cur_ua >= 2500000)
+		return IN_2_5A;
+	else if (in_cur_ua >= 2000000)
+		return IN_2A;
+	else if (in_cur_ua >= 1750000)
+		return IN_1_75A;
+	else if (in_cur_ua >= 1500000)
+		return IN_1_5A;
+	else if (in_cur_ua >= 850000)
+		return IN_0_85A;
+	else if (in_cur_ua >= 450000)
+		return IN_0_45A;
+	else if (in_cur_ua >= 80000)
+		return IN_0_08A;
+	else
+		return -EINVAL;
+}
+
+static int rk817_round_cur(u32 in_cur_ua)
+{
+	if (in_cur_ua >= 3000000)
+		return 3000000;
+	else if (in_cur_ua >= 2500000)
+		return 2500000;
+	else if (in_cur_ua >= 2000000)
+		return 2000000;
+	else if (in_cur_ua >= 1750000)
+		return 1750000;
+	else if (in_cur_ua >= 1500000)
+		return 1500000;
+	else if (in_cur_ua >= 850000)
+		return 850000;
+	else if (in_cur_ua >= 450000)
+		return 450000;
+	else if (in_cur_ua >= 80000)
+		return 80000;
+	else
+		return -EINVAL;
 }
 
 static void rk817_bat_calib_vol(struct rk817_charger *charger)
@@ -563,6 +622,9 @@ static int rk817_chg_get_prop(struct power_supply *ps,
 	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
 		val->intval = charger->charger_input_volt_avg_uv;
 		break;
+	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:
+		val->intval = charger->in_max_current_ua;
+		break;
 	/*
 	 * While it's possible that other implementations could use different
 	 * USB types, the current implementation for this PMIC (the Odroid Go
@@ -576,6 +638,42 @@ static int rk817_chg_get_prop(struct power_supply *ps,
 	}
 	return 0;
 
+}
+
+static int rk817_chg_set_prop(struct power_supply *ps,
+			      enum power_supply_property prop,
+			      const union power_supply_propval *val)
+{
+	struct rk817_charger *charger = power_supply_get_drvdata(ps);
+	int intval;
+
+	switch (prop) {
+	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:
+		intval = rk817_round_cur(val->intval);
+		if (intval < 0)
+			return -EINVAL;
+		charger->in_max_current_ua = intval;
+		regmap_write_bits(charger->rk808->regmap,
+				  RK817_PMIC_CHRG_IN,
+				  RK817_USB_ILIM_SEL,
+				  rk817_in_cur_to_reg(
+					  charger->in_max_current_ua));
+		break;
+	default:
+		return -EINVAL;
+	}
+	return 0;
+}
+
+static int rk817_chg_prop_writeable(struct power_supply *ps,
+				    enum power_supply_property prop)
+{
+	switch (prop) {
+	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT:
+		return 1;
+	default:
+		return 0;
+	}
 }
 
 static irqreturn_t rk817_plug_in_isr(int irq, void *cg)
@@ -619,11 +717,11 @@ static irqreturn_t rk817_plug_out_isr(int irq, void *cg)
 			  (0x01 << 7));
 
 	/*
-	 * Set average USB input current limit to 1.5A and enable USB current
-	 * input limit.
+	 * Set average USB input current limit and enable USB current input limit.
 	 */
 	regmap_write_bits(rk808->regmap, RK817_PMIC_CHRG_IN,
-			  RK817_USB_ILIM_SEL, 0x03);
+			  RK817_USB_ILIM_SEL,
+			  rk817_in_cur_to_reg(charger->in_max_current_ua));
 	regmap_write_bits(rk808->regmap, RK817_PMIC_CHRG_IN, RK817_USB_ILIM_EN,
 			  (0x01 << 3));
 
@@ -657,6 +755,7 @@ static enum power_supply_property rk817_chg_props[] = {
 	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
 	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
 	POWER_SUPPLY_PROP_VOLTAGE_AVG,
+	POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT,
 };
 
 static enum power_supply_usb_type rk817_usb_type[] = {
@@ -680,6 +779,8 @@ static const struct power_supply_desc rk817_chg_desc = {
 	.properties = rk817_chg_props,
 	.num_properties = ARRAY_SIZE(rk817_chg_props),
 	.get_property = rk817_chg_get_prop,
+	.set_property = rk817_chg_set_prop,
+	.property_is_writeable = rk817_chg_prop_writeable,
 };
 
 static int rk817_read_battery_nvram_values(struct rk817_charger *charger)
@@ -1020,11 +1121,11 @@ static int rk817_battery_init(struct rk817_charger *charger,
 			  (0x01 << 7));
 
 	/*
-	 * Set average USB input current limit to 1.5A and enable USB current
-	 * input limit.
+	 * Set average USB input current limit and enable USB current input limit.
 	 */
 	regmap_write_bits(rk808->regmap, RK817_PMIC_CHRG_IN,
-			  RK817_USB_ILIM_SEL, 0x03);
+			  RK817_USB_ILIM_SEL,
+			  rk817_in_cur_to_reg(charger->in_max_current_ua));
 	regmap_write_bits(rk808->regmap, RK817_PMIC_CHRG_IN, RK817_USB_ILIM_EN,
 			  (0x01 << 3));
 
@@ -1115,6 +1216,16 @@ static int rk817_charger_probe(struct platform_device *pdev)
 	}
 
 	charger->sleep_filter_current_ua = of_value;
+
+	ret = of_property_read_u32(node,
+				   "rockchip,max-input-current-microamp",
+				   &of_value);
+
+	of_value = rk817_round_cur(of_value);
+	if (ret < 0 || of_value < 0)
+		charger->in_max_current_ua = 1500000;
+	else
+		charger->in_max_current_ua = of_value;
 
 	charger->bat_ps = devm_power_supply_register(&pdev->dev,
 						     &rk817_bat_desc, &pscfg);
