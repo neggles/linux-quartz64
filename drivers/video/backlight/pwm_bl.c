@@ -31,6 +31,8 @@ struct pwm_bl_data {
 	bool			legacy;
 	unsigned int		post_pwm_on_delay;
 	unsigned int		pwm_off_delay;
+	unsigned int		led_off_period;
+	unsigned int		led_on_period;
 	int			(*notify)(struct device *,
 					  int brightness);
 	void			(*notify_after)(struct device *,
@@ -41,7 +43,7 @@ struct pwm_bl_data {
 
 static void pwm_backlight_power_on(struct pwm_bl_data *pb)
 {
-	struct pwm_state state;
+	struct pwm_state state, state_poweron;
 	int err;
 
 	pwm_get_state(pb->pwm, &state);
@@ -53,13 +55,21 @@ static void pwm_backlight_power_on(struct pwm_bl_data *pb)
 		dev_err(pb->dev, "failed to enable power supply\n");
 
 	state.enabled = true;
-	pwm_apply_state(pb->pwm, &state);
+	if (pb->led_on_period) {
+		state_poweron = state;
+		state_poweron.duty_cycle = pb->led_on_period;
+		pwm_apply_state(pb->pwm, &state_poweron);
+	} else
+		pwm_apply_state(pb->pwm, &state);
 
 	if (pb->post_pwm_on_delay)
 		msleep(pb->post_pwm_on_delay);
 
 	if (pb->enable_gpio)
 		gpiod_set_value_cansleep(pb->enable_gpio, 1);
+
+	if (pb->led_on_period)
+		pwm_apply_state(pb->pwm, &state);
 
 	pb->enabled = true;
 }
@@ -110,13 +120,14 @@ static int pwm_backlight_update_status(struct backlight_device *bl)
 	struct pwm_bl_data *pb = bl_get_data(bl);
 	int brightness = backlight_get_brightness(bl);
 	struct pwm_state state;
+	unsigned int duty_cycle = compute_duty_cycle(pb, brightness);
 
 	if (pb->notify)
 		brightness = pb->notify(pb->dev, brightness);
 
-	if (brightness > 0) {
+	if (brightness > 0 && duty_cycle > pb->led_off_period) {
 		pwm_get_state(pb->pwm, &state);
-		state.duty_cycle = compute_duty_cycle(pb, brightness);
+		state.duty_cycle = duty_cycle;
 		pwm_apply_state(pb->pwm, &state);
 		pwm_backlight_power_on(pb);
 	} else {
@@ -250,6 +261,8 @@ static int pwm_backlight_parse_dt(struct device *dev,
 	of_property_read_u32(node, "post-pwm-on-delay-ms",
 			     &data->post_pwm_on_delay);
 	of_property_read_u32(node, "pwm-off-delay-ms", &data->pwm_off_delay);
+	of_property_read_u32(node, "led-off-period-ns", &data->led_off_period);
+	of_property_read_u32(node, "led-on-period-ns", &data->led_on_period);
 
 	/*
 	 * Determine the number of brightness levels, if this property is not
@@ -491,6 +504,8 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	pb->enabled = false;
 	pb->post_pwm_on_delay = data->post_pwm_on_delay;
 	pb->pwm_off_delay = data->pwm_off_delay;
+	pb->led_off_period = data->led_off_period;
+	pb->led_on_period = data->led_on_period;
 
 	pb->enable_gpio = devm_gpiod_get_optional(&pdev->dev, "enable",
 						  GPIOD_ASIS);
