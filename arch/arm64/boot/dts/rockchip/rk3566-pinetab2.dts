@@ -4,6 +4,7 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
+#include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/leds/common.h>
 #include <dt-bindings/pinctrl/rockchip.h>
 #include <dt-bindings/soc/rockchip,vop2.h>
@@ -18,6 +19,7 @@
 	aliases {
 		mmc0 = &sdmmc0;
 		mmc1 = &sdhci;
+		mmc2 = &sdmmc1;
 	};
 
 	chosen {
@@ -54,6 +56,7 @@
 
 	battery: battery {
 		compatible = "simple-battery";
+		device-chemistry = "lithium-ion-polymer";
 		charge-full-design-microamp-hours = <6000000>;
 		charge-term-current-microamp = <300000>;
 		constant-charge-current-max-microamp = <2000000>;
@@ -62,12 +65,13 @@
 		voltage-min-design-microvolt = <3400000>;
 
 		ocv-capacity-celsius = <20>;
-		ocv-capacity-table-0 = <4322000 100>, <4250000 95>, <4192000 90>, <4136000 85>,
-				       <4080000 80>, <4022000 75>, <3972000 70>, <3928000 65>,
-				       <3885000 60>, <3833000 55>, <3798000 50>, <3780000 45>,
-				       <3776000 40>, <3773000 35>, <3755000 30>, <3706000 25>,
-				       <3640000 20>, <3589000 15>, <3535000 10>, <3492000 5>,
-				       <3400000 0>;
+		ocv-capacity-table-0 = <4322000 100>, <4250000 95>, <4192000 90>,
+				       <4136000 85>, <4080000 80>, <4022000 75>,
+				       <3972000 70>, <3928000 65>, <3885000 60>,
+				       <3833000 55>, <3798000 50>, <3780000 45>,
+				       <3776000 40>, <3773000 35>, <3755000 30>,
+				       <3706000 25>, <3640000 20>, <3589000 15>,
+				       <3535000 10>, <3492000 5>, <3400000 0>;
 	};
 
 	gpio-keys {
@@ -166,7 +170,7 @@
 		pinctrl-0 = <&spk_ctl>;
 		enable-gpios = <&gpio4 RK_PC2 GPIO_ACTIVE_HIGH>;
 		sound-name-prefix = "Speaker Amplifier";
-		VCC-supply = <&vcc_bat>;
+		vcc-supply = <&vcc_bat>;
 	};
 
 	vcc_3v3: vcc_3v3 {
@@ -302,7 +306,7 @@
 };
 
 &combphy2 {
-	status = "okay";
+	status = "disabled";
 };
 
 &cpu0 {
@@ -379,6 +383,7 @@
 
 &dsi_dphy0 {
 	status = "okay";
+	phy-supply = <&vcc_1v8>;
 };
 
 &gpu {
@@ -459,13 +464,13 @@
 		regulators {
 			vdd_logic: DCDC_REG1 {
 				regulator-always-on;
-				regulator-boot-on;
 				regulator-min-microvolt = <500000>;
 				regulator-max-microvolt = <1350000>;
 				regulator-init-microvolt = <900000>;
 				regulator-ramp-delay = <6001>;
 				regulator-initial-mode = <0x2>;
 				regulator-name = "vdd_logic";
+
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -473,13 +478,13 @@
 
 			vdd_gpu_npu: DCDC_REG2 {
 				regulator-always-on;
-				regulator-boot-on;
 				regulator-min-microvolt = <500000>;
 				regulator-max-microvolt = <1350000>;
 				regulator-init-microvolt = <900000>;
 				regulator-ramp-delay = <6001>;
 				regulator-initial-mode = <0x2>;
 				regulator-name = "vdd_gpu_npu";
+
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -487,9 +492,9 @@
 
 			vcc_ddr: DCDC_REG3 {
 				regulator-always-on;
-				regulator-boot-on;
 				regulator-initial-mode = <0x2>;
 				regulator-name = "vcc_ddr";
+
 				regulator-state-mem {
 					regulator-on-in-suspend;
 				};
@@ -497,11 +502,11 @@
 
 			vcc3v3_sys: DCDC_REG4 {
 				regulator-always-on;
-				regulator-boot-on;
 				regulator-min-microvolt = <3300000>;
 				regulator-max-microvolt = <3300000>;
 				regulator-initial-mode = <0x2>;
 				regulator-name = "vcc3v3_sys";
+
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -509,10 +514,10 @@
 
 			vcca1v8_pmu: LDO_REG1 {
 				regulator-always-on;
-				regulator-boot-on;
 				regulator-min-microvolt = <1800000>;
 				regulator-max-microvolt = <1800000>;
 				regulator-name = "vcca1v8_pmu";
+
 				regulator-state-mem {
 					regulator-on-in-suspend;
 				};
@@ -520,10 +525,10 @@
 
 			vdda_0v9_p: LDO_REG2 {
 				regulator-always-on;
-				regulator-boot-on;
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <900000>;
 				regulator-name = "vdda_0v9_p";
+
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -531,10 +536,10 @@
 
 			vdda0v9_pmu: LDO_REG3 {
 				regulator-always-on;
-				regulator-boot-on;
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <900000>;
 				regulator-name = "vdda0v9_pmu";
+
 				regulator-state-mem {
 					regulator-on-in-suspend;
 				};
@@ -542,10 +547,10 @@
 
 			vccio_acodec: LDO_REG4 {
 				regulator-always-on;
-				regulator-boot-on;
 				regulator-min-microvolt = <3300000>;
 				regulator-max-microvolt = <3300000>;
 				regulator-name = "vccio_acodec";
+
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -553,10 +558,10 @@
 
 			vccio_sd: LDO_REG5 {
 				regulator-always-on;
-				regulator-boot-on;
 				regulator-min-microvolt = <1800000>;
 				regulator-max-microvolt = <3300000>;
 				regulator-name = "vccio_sd";
+
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -564,10 +569,10 @@
 
 			vcc3v3_pmu: LDO_REG6 {
 				regulator-always-on;
-				regulator-boot-on;
 				regulator-min-microvolt = <3300000>;
 				regulator-max-microvolt = <3300000>;
 				regulator-name = "vcc3v3_pmu";
+
 				regulator-state-mem {
 					regulator-on-in-suspend;
 				};
@@ -575,10 +580,10 @@
 
 			vcc_1v8: LDO_REG7 {
 				regulator-always-on;
-				regulator-boot-on;
 				regulator-min-microvolt = <1800000>;
 				regulator-max-microvolt = <1800000>;
 				regulator-name = "vcc_1v8";
+
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -586,10 +591,10 @@
 
 			vcc1v8_dvp: LDO_REG8 {
 				regulator-always-on;
-				regulator-boot-on;
 				regulator-min-microvolt = <1800000>;
 				regulator-max-microvolt = <1800000>;
 				regulator-name = "vcc1v8_dvp";
+
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -597,10 +602,10 @@
 
 			vcc2v8_dvp: LDO_REG9 {
 				regulator-always-on;
-				regulator-boot-on;
 				regulator-min-microvolt = <2800000>;
 				regulator-max-microvolt = <2800000>;
 				regulator-name = "vcc2v8_dvp";
+
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -608,10 +613,10 @@
 
 			vcc5v_midu: BOOST {
 				regulator-always-on;
-				regulator-boot-on;
 				regulator-min-microvolt = <5000000>;
 				regulator-max-microvolt = <5000000>;
 				regulator-name = "boost";
+
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -621,6 +626,7 @@
 				regulator-min-microvolt = <5000000>;
 				regulator-max-microvolt = <5000000>;
 				regulator-name = "otg_switch";
+
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -630,7 +636,7 @@
 		charger {
 			monitored-battery = <&battery>;
 			rockchip,resistor-sense-micro-ohms = <10000>;
-			rockchip,sleep-enter-current-microamp = <300000>;
+			rockchip,sleep-enter-current-microamp = <150000>;
 			rockchip,sleep-filter-current-microamp = <100000>;
 			rockchip,max-input-current-microamp = <2000000>;
 		};
@@ -653,8 +659,12 @@
 			try-power-role = "sink";
 			data-role = "dual";
 			sink-pdos =
-				<PDO_FIXED(5000, 2000, PDO_FIXED_USB_COMM)>;
+				<PDO_FIXED(5000, 1000, PDO_FIXED_USB_COMM)>,
+				<PDO_FIXED(5000, 1500, PDO_FIXED_USB_COMM)>,
+				<PDO_FIXED(5000, 2000, PDO_FIXED_USB_COMM)>,
+				<PDO_FIXED(5000, 2500, PDO_FIXED_USB_COMM)>;
 			source-pdos =
+				<PDO_FIXED(5000, 500, PDO_FIXED_USB_COMM)>,
 				<PDO_FIXED(5000, 1000, PDO_FIXED_USB_COMM)>;
 
 			ports {
@@ -753,10 +763,7 @@
 
 &i2s1_8ch {
 	pinctrl-names = "default";
-	pinctrl-0 = <&i2s1m0_sclktx
-		     &i2s1m0_lrcktx
-		     &i2s1m0_sdi0
-		     &i2s1m0_sdo0>;
+	pinctrl-0 = <&i2s1m0_sclktx &i2s1m0_lrcktx &i2s1m0_sdi0 &i2s1m0_sdo0>;
 	rockchip,trcm-sync-tx-only;
 	status = "okay";
 };
@@ -766,7 +773,7 @@
 	pinctrl-0 = <&pcie_reset_h>;
 	reset-gpios = <&gpio1 RK_PB2 GPIO_ACTIVE_HIGH>;
 	vpcie3v3-supply = <&vcc3v3_minipcie>;
-	status = "okay";
+	status = "disabled";
 };
 
 &pinctrl {
@@ -870,6 +877,20 @@
 		};
 	};
 
+	sfc {
+		fspi_1bit_pins: fspi-1bit-pins {
+			rockchip,pins =
+				/* fspi_clk */
+				<1 RK_PD0 1 &pcfg_pull_none>,
+				/* fspi_cs0n */
+				<1 RK_PD3 1 &pcfg_pull_none>,
+				/* fspi_d0 */
+				<1 RK_PD1 1 &pcfg_pull_none>,
+				/* fspi_d1 */
+				<1 RK_PD2 1 &pcfg_pull_none>;
+		};
+	};
+
 	touchscreen {
 		tp_int_l_pmuio2: tp-int-l-pmuio2 {
 			rockchip,pins = <0 RK_PB0 RK_FUNC_GPIO &pcfg_pull_up>;
@@ -948,28 +969,34 @@
 	mmc-hs200-1_8v;
 	mmc-hs400-1_8v;
 	mmc-hs400-enhanced-strobe;
-	pinctrl-names = "default";
 	pinctrl-0 = <&emmc_bus8
 		     &emmc_clk
 		     &emmc_cmd
 		     &emmc_datastrobe
 		     &emmc_rstnout>;
+	pinctrl-names = "default";
 	vmmc-supply = <&vcc_3v3>;
 	vqmmc-supply = <&vcc_1v8>;
 	status = "okay";
 };
 
 &sdmmc0 {
+	max-frequency = <150000000>;
+	no-sdio;
+	no-mmc;
 	bus-width = <4>;
+	cap-mmc-highspeed;
 	cap-sd-highspeed;
-	cd-gpios = <&gpio0 RK_PA4 GPIO_ACTIVE_LOW>;
 	disable-wp;
-	pinctrl-names = "default";
-	pinctrl-0 = <&sdmmc0_bus4
-		     &sdmmc0_clk
-		     &sdmmc0_cmd
-		     &sdmmc0_det>;
 	sd-uhs-sdr104;
+	cap-sd-highspeed;
+
+	cd-gpios = <&gpio0 RK_PA4 GPIO_ACTIVE_LOW>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&sdmmc0_bus4>,
+		    <&sdmmc0_clk>,
+		    <&sdmmc0_cmd>,
+		    <&sdmmc0_det>;
 	vmmc-supply = <&vcc3v3_sd>;
 	vqmmc-supply = <&vccio_sd>;
 	status = "okay";
@@ -979,20 +1006,25 @@
 	bus-width = <4>;
 	cap-sd-highspeed;
 	cap-sdio-irq;
-	keep-power-in-suspend;
-	mmc-pwrseq = <&sdio_pwrseq>;
+	no-mmc;
+	no-sd;
 	non-removable;
-	pinctrl-names = "default";
-	pinctrl-0 = <&sdmmc1_bus4
-		     &sdmmc1_cmd
-		     &sdmmc1_clk>;
 	sd-uhs-sdr104;
+	keep-power-in-suspend;
+
+	mmc-pwrseq = <&sdio_pwrseq>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&sdmmc1_bus4>,
+		    <&sdmmc1_cmd>,
+		    <&sdmmc1_clk>;
 	vmmc-supply = <&vcc_wl>;
 	vqmmc-supply = <&vcca1v8_pmu>;
 	status = "okay";
 };
 
 &sfc {
+	pinctrl-0 = <&fspi_pins>;
+	pinctrl-names = "default";
 	#address-cells = <1>;
 	#size-cells = <0>;
 	status = "okay";
@@ -1014,11 +1046,11 @@
 
 &uart1 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&uart1m0_xfer
-		     &uart1m0_ctsn
-		     &uart1m0_rtsn>;
-	status = "okay";
+	pinctrl-0 = <&uart1m0_xfer>,
+		    <&uart1m0_ctsn>,
+		    <&uart1m0_rtsn>;
 	uart-has-rtscts;
+	status = "okay";
 };
 
 &uart2 {
