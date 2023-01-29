@@ -15,12 +15,19 @@
 #include <drm/drm_modes.h>
 #include <drm/drm_panel.h>
 
-struct boe {
+struct boe_th101mb31ig002_28a_info {
+	const struct drm_display_mode *modes;
+	unsigned int num_modes;
+	u16 width_mm, height_mm;
+};
+
+struct boe_th101mb31ig002_panel {
 	struct drm_panel panel;
 	bool enabled;
 	bool prepared;
 
 	struct mipi_dsi_device *dsi;
+	const struct boe_th101mb31ig002_28a_info *info;
 
 	struct regulator *power;
 	struct gpio_desc *enable;
@@ -29,14 +36,14 @@ struct boe {
 	enum drm_panel_orientation orientation;
 };
 
-static inline struct boe *panel_to_boe(struct drm_panel *panel)
+static inline struct boe_th101mb31ig002_panel *panel_to_boe(struct drm_panel *panel)
 {
-	return container_of(panel, struct boe, panel);
+	return container_of(panel, struct boe_th101mb31ig002_panel, panel);
 }
 
-static int boe_disable(struct drm_panel *panel)
+static int boe_panel_disable(struct drm_panel *panel)
 {
-	struct boe *ctx = panel_to_boe(panel);
+	struct boe_th101mb31ig002_panel *ctx = panel_to_boe(panel);
 
 	if (!ctx->enabled)
 		return 0;
@@ -49,9 +56,9 @@ static int boe_disable(struct drm_panel *panel)
 	return 0;
 }
 
-static int boe_unprepare(struct drm_panel *panel)
+static int boe_panel_unprepare(struct drm_panel *panel)
 {
-	struct boe *ctx = panel_to_boe(panel);
+	struct boe_th101mb31ig002_panel *ctx = panel_to_boe(panel);
 
 	if (!ctx->prepared)
 		return 0;
@@ -68,9 +75,9 @@ static int boe_unprepare(struct drm_panel *panel)
 	return 0;
 }
 
-static int boe_prepare(struct drm_panel *panel)
+static int boe_panel_prepare(struct drm_panel *panel)
 {
-	struct boe *ctx = panel_to_boe(panel);
+	struct boe_th101mb31ig002_panel *ctx = panel_to_boe(panel);
 	struct mipi_dsi_device *dsi = ctx->dsi;
 	int ret;
 
@@ -127,9 +134,9 @@ static int boe_prepare(struct drm_panel *panel)
 	return 0;
 }
 
-static int boe_enable(struct drm_panel *panel)
+static int boe_panel_enable(struct drm_panel *panel)
 {
-	struct boe *ctx = panel_to_boe(panel);
+	struct boe_th101mb31ig002_panel *ctx = panel_to_boe(panel);
 
 	if (ctx->enabled)
 		return 0;
@@ -142,43 +149,34 @@ static int boe_enable(struct drm_panel *panel)
 	return 0;
 }
 
-static const struct drm_display_mode boe_default_mode = {
-	.clock		= 73500,
 
-	.hdisplay	= 800,
-	.hsync_start	= 800 + 64,
-	.hsync_end	= 800 + 64 + 16,
-	.htotal		= 800 + 64 + 16 + 64,
 
-	.vdisplay	= 1280,
-	.vsync_start	= 1280 + 2,
-	.vsync_end	= 1280 + 2 + 4,
-	.vtotal		= 1280 + 2 + 4 + 12,
-
-	.type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED,
-};
-
-static int boe_get_modes(struct drm_panel *panel,
+static int boe_panel_get_modes(struct drm_panel *panel,
 			 struct drm_connector *connector)
 {
-	struct boe *ctx = panel_to_boe(panel);
-	struct drm_display_mode *mode;
+	struct boe_th101mb31ig002_panel *ctx = panel_to_boe(panel);
+	int i;
 
-	mode = drm_mode_duplicate(connector->dev, &boe_default_mode);
-	if (!mode) {
-		dev_err(panel->dev, "Failed to add mode %ux%u@%u\n",
-			boe_default_mode.hdisplay,
-			boe_default_mode.vdisplay,
-			drm_mode_vrefresh(&boe_default_mode));
-		return -ENOMEM;
+	for (i=0; i < ctx->info->num_modes; i++) {
+		struct drm_display_mode *mode;
+
+		mode = drm_mode_duplicate(connector->dev, &ctx->info->modes[i]);
+		if (!mode) {
+			dev_err(panel->dev, "Failed to add mode %ux%u@%u\n",
+				ctx->info->modes[i].hdisplay,
+				ctx->info->modes[i].vdisplay,
+				drm_mode_vrefresh(&ctx->info->modes[i]));
+			return -ENOMEM;
+		}
+
+		mode->type = DRM_MODE_TYPE_DRIVER;
+		if (ctx->info->num_modes == 1)
+			mode->type |= DRM_MODE_TYPE_PREFERRED;
 	}
 
-	drm_mode_set_name(mode);
-	drm_mode_probed_add(connector, mode);
-
 	connector->display_info.bpc = 8;
-	connector->display_info.width_mm = 216;
-	connector->display_info.height_mm = 135;
+	connector->display_info.width_mm = ctx->info->width_mm;
+	connector->display_info.height_mm = ctx->info->height_mm;
 
 	/*
 	 * TODO: Remove once all drm drivers call
@@ -189,25 +187,25 @@ static int boe_get_modes(struct drm_panel *panel,
 	return 1;
 }
 
-static enum drm_panel_orientation boe_get_orientation(struct drm_panel *panel)
+static enum drm_panel_orientation boe_panel_get_orientation(struct drm_panel *panel)
 {
-	struct boe *ctx = panel_to_boe(panel);
+	struct boe_th101mb31ig002_panel *ctx = panel_to_boe(panel);
 
 	return ctx->orientation;
 }
 
-static const struct drm_panel_funcs boe_funcs = {
-	.disable = boe_disable,
-	.unprepare = boe_unprepare,
-	.prepare = boe_prepare,
-	.enable = boe_enable,
-	.get_modes = boe_get_modes,
-	.get_orientation = boe_get_orientation,
+static const struct drm_panel_funcs boe_panel_funcs = {
+	.disable = boe_panel_disable,
+	.unprepare = boe_panel_unprepare,
+	.prepare = boe_panel_prepare,
+	.enable = boe_panel_enable,
+	.get_modes = boe_panel_get_modes,
+	.get_orientation = boe_panel_get_orientation,
 };
 
-static int boe_dsi_probe(struct mipi_dsi_device *dsi)
+static int boe_panel_dsi_probe(struct mipi_dsi_device *dsi)
 {
-	struct boe *ctx;
+	struct boe_th101mb31ig002_panel *ctx;
 	int ret;
 
 	ctx = devm_kzalloc(&dsi->dev, sizeof(*ctx), GFP_KERNEL);
@@ -220,7 +218,7 @@ static int boe_dsi_probe(struct mipi_dsi_device *dsi)
 	mipi_dsi_set_drvdata(dsi, ctx);
 	ctx->dsi = dsi;
 
-	drm_panel_init(&ctx->panel, &dsi->dev, &boe_funcs,
+	drm_panel_init(&ctx->panel, &dsi->dev, &boe_panel_funcs,
 		       DRM_MODE_CONNECTOR_DSI);
 
 	ctx->power = devm_regulator_get(&dsi->dev, "power");
@@ -264,29 +262,63 @@ static int boe_dsi_probe(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
-static void boe_dsi_remove(struct mipi_dsi_device *dsi)
+static void boe_panel_dsi_remove(struct mipi_dsi_device *dsi)
 {
-	struct boe *ctx = mipi_dsi_get_drvdata(dsi);
+	struct boe_th101mb31ig002_panel *ctx = mipi_dsi_get_drvdata(dsi);
 
 	mipi_dsi_detach(dsi);
 	drm_panel_remove(&ctx->panel);
 }
 
-static const struct of_device_id boe_of_match[] = {
+static const struct drm_display_mode boe_th101mb31ig002_modes[] = {
+	{ /* 60Hz */
+		.clock		= 73519,
+		.hdisplay	= 800,
+		.hsync_start	= 800 + 64,
+		.hsync_end	= 800 + 64 + 16,
+		.htotal		= 800 + 64 + 16 + 36,
+		.vdisplay	= 1280,
+		.vsync_start	= 1280 + 2,
+		.vsync_end	= 1280 + 2 + 4,
+		.vtotal		= 1280 + 2 + 4 + 12,
+		.type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED,
+	},
+	{ /* 75Hz */
+		.clock		= 95403,
+		.hdisplay	= 800,
+		.hsync_start	= 800 + 80,
+		.hsync_end	= 800 + 80 + 20,
+		.htotal		= 800 + 80 + 20 + 80,
+		.vdisplay	= 1280,
+		.vsync_start	= 1280 + 2,
+		.vsync_end	= 1280 + 2 + 8,
+		.vtotal		= 1280 + 2 + 8 + 8,
+		.type = DRM_MODE_TYPE_DRIVER,
+	},
+};
+
+static const struct boe_th101mb31ig002_28a_info boe_th101mb31ig002_28a_info = {
+	.modes = boe_th101mb31ig002_modes,
+	.num_modes = ARRAY_SIZE(boe_th101mb31ig002_modes),
+	.width_mm = 135,
+	.height_mm = 216,
+};
+
+static const struct of_device_id boe_panel_of_match[] = {
 	{ .compatible = "boe,th101mb31ig002-28a", },
 	{ /* sentinel */ }
 };
-MODULE_DEVICE_TABLE(of, boe_of_match);
+MODULE_DEVICE_TABLE(of, boe_panel_of_match);
 
-static struct mipi_dsi_driver boe_driver = {
+static struct mipi_dsi_driver boe_panel_driver = {
 	.driver = {
 		.name = "boe-th101mb31ig002-28a",
-		.of_match_table = boe_of_match,
+		.of_match_table = boe_panel_of_match,
 	},
-	.probe = boe_dsi_probe,
-	.remove = boe_dsi_remove,
+	.probe = boe_panel_dsi_probe,
+	.remove = boe_panel_dsi_remove,
 };
-module_mipi_dsi_driver(boe_driver);
+module_mipi_dsi_driver(boe_panel_driver);
 
 MODULE_AUTHOR("Alexander Warnecke <awarnecke002@hotmail.com>");
 MODULE_DESCRIPTION("BOE TH101MB31IG002-28A MIPI-DSI LCD panel");
