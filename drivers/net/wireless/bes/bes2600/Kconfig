@@ -33,7 +33,7 @@ config BES2600_WLAN_SPI
 	default n
 	help
 	  This option enables the SPI bus interface support for Bes2600
-	  WLAN driver. Say Y if you want to use USB.
+	  WLAN driver. Say Y if you want to use SPI.
 
 config BES2600_USE_GPIO_IRQ
 	bool "Use GPIO interrupt"
