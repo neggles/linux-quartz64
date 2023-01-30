@@ -15,7 +15,7 @@
 #include <drm/drm_modes.h>
 #include <drm/drm_panel.h>
 
-struct boe_th101mb31ig002_28a_info {
+struct boe_th101mb31ig002_panel_info {
 	const struct drm_display_mode *modes;
 	unsigned int num_modes;
 	u16 width_mm, height_mm;
@@ -27,7 +27,7 @@ struct boe_th101mb31ig002_panel {
 	bool prepared;
 
 	struct mipi_dsi_device *dsi;
-	const struct boe_th101mb31ig002_28a_info *info;
+	const struct boe_th101mb31ig002_panel_info *panel_info;
 
 	struct regulator *power;
 	struct gpio_desc *enable;
@@ -43,62 +43,62 @@ static inline struct boe_th101mb31ig002_panel *panel_to_boe(struct drm_panel *pa
 
 static int boe_panel_disable(struct drm_panel *panel)
 {
-	struct boe_th101mb31ig002_panel *ctx = panel_to_boe(panel);
+	struct boe_th101mb31ig002_panel *priv = panel_to_boe(panel);
 
-	if (!ctx->enabled)
+	if (!priv->enabled)
 		return 0;
 
-	mipi_dsi_dcs_set_display_off(ctx->dsi);
+	mipi_dsi_dcs_set_display_off(priv->dsi);
 
 	msleep(120);
 
-	ctx->enabled = false;
+	priv->enabled = false;
 	return 0;
 }
 
 static int boe_panel_unprepare(struct drm_panel *panel)
 {
-	struct boe_th101mb31ig002_panel *ctx = panel_to_boe(panel);
+	struct boe_th101mb31ig002_panel *priv = panel_to_boe(panel);
 
-	if (!ctx->prepared)
+	if (!priv->prepared)
 		return 0;
 
-	mipi_dsi_dcs_enter_sleep_mode(ctx->dsi);
+	mipi_dsi_dcs_enter_sleep_mode(priv->dsi);
 
 	msleep(220);
 
-	gpiod_set_value_cansleep(ctx->reset, 1);
-	gpiod_set_value_cansleep(ctx->enable, 0);
-	regulator_disable(ctx->power);
+	gpiod_set_value_cansleep(priv->reset, 1);
+	gpiod_set_value_cansleep(priv->enable, 0);
+	regulator_disable(priv->power);
 
-	ctx->prepared = false;
+	priv->prepared = false;
 	return 0;
 }
 
 static int boe_panel_prepare(struct drm_panel *panel)
 {
-	struct boe_th101mb31ig002_panel *ctx = panel_to_boe(panel);
-	struct mipi_dsi_device *dsi = ctx->dsi;
+	struct boe_th101mb31ig002_panel *priv = panel_to_boe(panel);
+	struct mipi_dsi_device *dsi = priv->dsi;
 	int ret;
 
-	if (ctx->prepared)
+	if (priv->prepared)
 		return 0;
 
-	ret = regulator_enable(ctx->power);
+	ret = regulator_enable(priv->power);
 	if (ret) {
 		dev_err(&dsi->dev, "Failed to enable power supply: %d\n", ret);
 		return ret;
 	}
 
-	gpiod_set_value_cansleep(ctx->enable, 1);
+	gpiod_set_value_cansleep(priv->enable, 1);
 
 	msleep(120);
 
-	gpiod_direction_output(ctx->reset, 1);
+	gpiod_direction_output(priv->reset, 1);
 
 	msleep(120);
 
-	gpiod_direction_output(ctx->reset, 0);
+	gpiod_direction_output(priv->reset, 0);
 
 	msleep(120);
 
@@ -130,68 +130,71 @@ static int boe_panel_prepare(struct drm_panel *panel)
 
 	msleep(120);
 
-	ctx->prepared = true;
+	priv->prepared = true;
 	return 0;
 }
 
 static int boe_panel_enable(struct drm_panel *panel)
 {
-	struct boe_th101mb31ig002_panel *ctx = panel_to_boe(panel);
+	struct boe_th101mb31ig002_panel *priv = panel_to_boe(panel);
 
-	if (ctx->enabled)
+	if (priv->enabled)
 		return 0;
 
-	mipi_dsi_dcs_set_display_on(ctx->dsi);
+	mipi_dsi_dcs_set_display_on(priv->dsi);
 
 	msleep(120);
 
-	ctx->enabled = true;
+	priv->enabled = true;
 	return 0;
 }
 
-
-
 static int boe_panel_get_modes(struct drm_panel *panel,
-			 struct drm_connector *connector)
+			       struct drm_connector *connector)
 {
-	struct boe_th101mb31ig002_panel *ctx = panel_to_boe(panel);
-	int i;
+	struct boe_th101mb31ig002_panel *priv = panel_to_boe(panel);
+	const struct boe_th101mb31ig002_panel_info *panel_info = priv->panel_info;
+	struct drm_display_mode *mode;
+	unsigned int i;
 
-	for (i=0; i < ctx->info->num_modes; i++) {
-		struct drm_display_mode *mode;
+	for (i = 0; i < panel_info->num_modes; i++) {
 
-		mode = drm_mode_duplicate(connector->dev, &ctx->info->modes[i]);
+		mode = drm_mode_duplicate(connector->dev,
+					  &panel_info->modes[i]);
 		if (!mode) {
 			dev_err(panel->dev, "Failed to add mode %ux%u@%u\n",
-				ctx->info->modes[i].hdisplay,
-				ctx->info->modes[i].vdisplay,
-				drm_mode_vrefresh(&ctx->info->modes[i]));
+				panel_info->modes[i].hdisplay,
+				panel_info->modes[i].vdisplay,
+				drm_mode_vrefresh(&panel_info->modes[i]));
 			return -ENOMEM;
 		}
+		drm_mode_set_name(mode);
 
 		mode->type = DRM_MODE_TYPE_DRIVER;
-		if (ctx->info->num_modes == 1)
+		if (panel_info->num_modes == 1)
 			mode->type |= DRM_MODE_TYPE_PREFERRED;
+
+		drm_mode_probed_add(connector, mode);
 	}
 
 	connector->display_info.bpc = 8;
-	connector->display_info.width_mm = ctx->info->width_mm;
-	connector->display_info.height_mm = ctx->info->height_mm;
+	connector->display_info.width_mm = panel_info->width_mm;
+	connector->display_info.height_mm = panel_info->height_mm;
 
 	/*
 	 * TODO: Remove once all drm drivers call
 	 * drm_connector_set_orientation_from_panel()
 	 */
-	drm_connector_set_panel_orientation(connector, ctx->orientation);
+	drm_connector_set_panel_orientation(connector, priv->orientation);
 
-	return 1;
+	return panel_info->num_modes;
 }
 
 static enum drm_panel_orientation boe_panel_get_orientation(struct drm_panel *panel)
 {
-	struct boe_th101mb31ig002_panel *ctx = panel_to_boe(panel);
+	struct boe_th101mb31ig002_panel *priv = panel_to_boe(panel);
 
-	return ctx->orientation;
+	return priv->orientation;
 }
 
 static const struct drm_panel_funcs boe_panel_funcs = {
@@ -205,47 +208,47 @@ static const struct drm_panel_funcs boe_panel_funcs = {
 
 static int boe_panel_dsi_probe(struct mipi_dsi_device *dsi)
 {
-	struct boe_th101mb31ig002_panel *ctx;
+	struct boe_th101mb31ig002_panel *priv;
 	int ret;
 
-	ctx = devm_kzalloc(&dsi->dev, sizeof(*ctx), GFP_KERNEL);
-	if (!ctx)
+	priv = devm_kzalloc(&dsi->dev, sizeof(*priv), GFP_KERNEL);
+	if (!priv)
 		return -ENOMEM;
 
-	ctx->enabled = false;
-	ctx->prepared = false;
+	priv->enabled = false;
+	priv->prepared = false;
 
-	mipi_dsi_set_drvdata(dsi, ctx);
-	ctx->dsi = dsi;
+	mipi_dsi_set_drvdata(dsi, priv);
+	priv->dsi = dsi;
 
-	drm_panel_init(&ctx->panel, &dsi->dev, &boe_panel_funcs,
+	drm_panel_init(&priv->panel, &dsi->dev, &boe_panel_funcs,
 		       DRM_MODE_CONNECTOR_DSI);
 
-	ctx->power = devm_regulator_get(&dsi->dev, "power");
-	if (IS_ERR(ctx->power))
-		return dev_err_probe(&dsi->dev, PTR_ERR(ctx->power),
+	priv->power = devm_regulator_get(&dsi->dev, "power");
+	if (IS_ERR(priv->power))
+		return dev_err_probe(&dsi->dev, PTR_ERR(priv->power),
 				     "Failed to get power regulator\n");
 
-	ctx->enable = devm_gpiod_get(&dsi->dev, "enable", GPIOD_OUT_LOW);
-	if (IS_ERR(ctx->enable))
-		return dev_err_probe(&dsi->dev, PTR_ERR(ctx->enable),
+	priv->enable = devm_gpiod_get(&dsi->dev, "enable", GPIOD_OUT_LOW);
+	if (IS_ERR(priv->enable))
+		return dev_err_probe(&dsi->dev, PTR_ERR(priv->enable),
 				     "Failed to get enable GPIO\n");
 
-	ctx->reset = devm_gpiod_get(&dsi->dev, "reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(ctx->reset))
-		return dev_err_probe(&dsi->dev, PTR_ERR(ctx->reset),
+	priv->reset = devm_gpiod_get(&dsi->dev, "reset", GPIOD_OUT_HIGH);
+	if (IS_ERR(priv->reset))
+		return dev_err_probe(&dsi->dev, PTR_ERR(priv->reset),
 				     "Failed to get reset GPIO\n");
 
-	ret = of_drm_get_panel_orientation(dsi->dev.of_node, &ctx->orientation);
+	ret = of_drm_get_panel_orientation(dsi->dev.of_node, &priv->orientation);
 	if (ret)
 		return dev_err_probe(&dsi->dev, ret,
 				     "Failed to get orientation\n");
 
-	ret = drm_panel_of_backlight(&ctx->panel);
+	ret = drm_panel_of_backlight(&priv->panel);
 	if (ret)
 		return ret;
 
-	drm_panel_add(&ctx->panel);
+	drm_panel_add(&priv->panel);
 
 	dsi->lanes = 4;
 	dsi->format = MIPI_DSI_FMT_RGB888;
@@ -255,7 +258,7 @@ static int boe_panel_dsi_probe(struct mipi_dsi_device *dsi)
 
 	ret = mipi_dsi_attach(dsi);
 	if (ret < 0) {
-		drm_panel_remove(&ctx->panel);
+		drm_panel_remove(&priv->panel);
 		return ret;
 	}
 
@@ -264,10 +267,10 @@ static int boe_panel_dsi_probe(struct mipi_dsi_device *dsi)
 
 static void boe_panel_dsi_remove(struct mipi_dsi_device *dsi)
 {
-	struct boe_th101mb31ig002_panel *ctx = mipi_dsi_get_drvdata(dsi);
+	struct boe_th101mb31ig002_panel *priv = mipi_dsi_get_drvdata(dsi);
 
 	mipi_dsi_detach(dsi);
-	drm_panel_remove(&ctx->panel);
+	drm_panel_remove(&priv->panel);
 }
 
 static const struct drm_display_mode boe_th101mb31ig002_modes[] = {
@@ -297,7 +300,7 @@ static const struct drm_display_mode boe_th101mb31ig002_modes[] = {
 	},
 };
 
-static const struct boe_th101mb31ig002_28a_info boe_th101mb31ig002_28a_info = {
+static const struct boe_th101mb31ig002_panel_info boe_th101mb31ig002_panel_info = {
 	.modes = boe_th101mb31ig002_modes,
 	.num_modes = ARRAY_SIZE(boe_th101mb31ig002_modes),
 	.width_mm = 135,
